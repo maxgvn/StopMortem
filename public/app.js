@@ -26,9 +26,46 @@ let runError = null;
 let activeTab = "stage1";
 let pollHandle = null;
 let manualEntries = []; // [{ gapFindingId, dimension, clientConfirms, clientDisputes, note }] — staged, not yet submitted
-let assignedItems = {}; // gapFindingId -> assignee label — local-only, no backend owner system to persist to
+let assignedItems = {}; // gapFindingId -> { assignee, personNote, internalNote } — local-only, no backend owner system to persist to
 
 const LIST_CAP = 5;
+
+// Fake internal roster for the assign flow — a name + small avatar, not a generic role label.
+const TEAM_ROSTER = [
+  { name: "Jane Doe", role: "Account Executive" },
+  { name: "Priya Shah", role: "Sales Manager" },
+  { name: "Marcus Webb", role: "Pre-Sales" },
+  { name: "Sam Okafor", role: "Product" },
+  { name: "Elena Torres", role: "Legal/Compliance" },
+];
+
+// Heuristic mapping from a MEDDPICC(+add-on) dimension to the department it's most
+// relevant to — purely a frontend label so "Ranked causes" can lead with who owns it.
+const DIMENSION_DEPARTMENT = {
+  metrics: "Pre-Sales",
+  economicBuyer: "Sales",
+  decisionCriteria: "Pre-Sales",
+  decisionProcess: "Sales",
+  paperProcess: "Sales",
+  identifyPain: "Pre-Sales",
+  champion: "Sales",
+  competition: "Product",
+  cfr11Compliance: "Product",
+  dataResidency: "Product",
+  validationDocumentation: "Product",
+  securityReviewSignoff: "Product",
+};
+
+function departmentFor(dimension) {
+  return DIMENSION_DEPARTMENT[dimension] ?? "Sales";
+}
+
+function firstSentence(text) {
+  if (!text) return "";
+  const match = text.match(/^.*?[.!?](?=\s|$)/);
+  if (match) return match[0];
+  return text.length > 140 ? `${text.slice(0, 140)}…` : text;
+}
 
 const TIER_BADGE = {
   documented_gap: { cls: "badge-good", label: "Documented gap" },
@@ -189,17 +226,18 @@ async function selectDeal(dealId) {
 
 // ---- Running a post-mortem ----
 
-async function runPipeline(dealId, { simulateWebhook = false } = {}) {
-  const waiveFeedback = document.getElementById("waiveFeedback")?.checked ?? false;
+async function runPipeline(dealId, { waiveFeedback = false } = {}) {
   runStatus = "running";
   runError = null;
   runResult = null;
   renderDealView();
 
   try {
-    const path = simulateWebhook ? "/api/webhooks/deal-closed" : `/api/deals/${dealId}/run`;
-    const body = simulateWebhook ? { dealId } : { waiveFeedback };
-    const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const res = await fetch(`/api/deals/${dealId}/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ waiveFeedback }),
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Unknown error");
     startPolling(data.runId);
@@ -234,7 +272,7 @@ function stopPolling() {
 }
 
 // Keep the sidebar's running indicators live even for deals other than the selected one
-// (e.g. one triggered via the "simulate CRM webhook" button while looking at a different deal).
+// (e.g. the server's own auto-triggered runs at startup, or a run on a deal you're not viewing).
 setInterval(() => {
   if (!activeDealId) loadDeals();
 }, 4000);
@@ -243,7 +281,6 @@ setInterval(() => {
 
 function renderDealView() {
   const isWon = currentDeal.deal.stage === "closed_won";
-  const hasFeedback = deals.find((d) => d.dealId === currentDeal.dealId)?.hasFeedback;
   const isPharma = currentDeal.meta.industry === "life_sciences_pharma";
   const accountTier = currentDeal.company.hubspot?.accountTier;
   const stages = currentDeal.deal.pipelineStagesReached ?? [];
@@ -255,9 +292,16 @@ function renderDealView() {
 
   const bannerHtml =
     runStatus === "running"
-      ? `<div class="running-banner"><span class="spinner"></span>Running — real Claude + Sillage + FullEnrich calls, ~30-90s. This keeps running even if you navigate away.</div>`
+      ? `<div class="running-banner">
+          <div class="running-banner-top"><span class="spinner"></span>Running post-mortem…</div>
+          <div class="running-banner-sub">Real Claude + Sillage + FullEnrich calls in progress, ~30-90s. Safe to navigate away — this keeps running server-side.</div>
+          <div class="running-banner-progress"></div>
+        </div>`
       : runStatus === "error"
-      ? `<div class="running-banner" style="color:var(--status-critical); border-color:var(--status-critical);">Error: ${escapeHtml(runError)}</div>`
+      ? `<div class="running-banner error">
+          <div class="running-banner-top">Run failed</div>
+          <div class="running-banner-sub">${escapeHtml(runError)}</div>
+        </div>`
       : "";
 
   const runControlsHtml = isWon
@@ -265,8 +309,6 @@ function renderDealView() {
     : `
     <div class="run-controls">
       <button class="run-btn" id="runBtn" ${runStatus === "running" ? "disabled" : ""}>Run post-mortem</button>
-      <button class="webhook-btn" id="webhookBtn" ${runStatus === "running" ? "disabled" : ""} title="Simulates a HubSpot 'Closed Lost' workflow auto-triggering this pipeline — no manual click needed in a real integration">Simulate CRM auto-trigger</button>
-      <label><input type="checkbox" id="waiveFeedback" ${hasFeedback ? "" : "disabled"}> Waive feedback${hasFeedback ? "" : " (none available)"}</label>
     </div>`;
 
   dealViewEl.innerHTML = `
@@ -297,7 +339,6 @@ function renderDealView() {
 
   if (!isWon) {
     document.getElementById("runBtn").addEventListener("click", () => runPipeline(currentDeal.dealId));
-    document.getElementById("webhookBtn").addEventListener("click", () => runPipeline(currentDeal.dealId, { simulateWebhook: true }));
   }
   attachTabListeners();
 }
@@ -434,6 +475,7 @@ function renderStage1() {
 
 function renderStage2() {
   const { portrait, finalPortrait, feedbackApplied, feedbackInput } = runResult;
+  const hasFeedback = deals.find((d) => d.dealId === currentDeal.dealId)?.hasFeedback;
 
   const before = new Map(portrait.gapFindings.map((f) => [f.id, f]));
   const upgraded = feedbackApplied ? finalPortrait.gapFindings.filter((f) => before.get(f.id)?.evidenceTier !== f.evidenceTier) : [];
@@ -456,31 +498,57 @@ function renderStage2() {
   // Findings whose deterministic next-step category is anything other than "no further
   // investigation needed" — these are the outstanding items a rep/manager should assign.
   const outstanding = finalPortrait.gapFindings.filter((f) => f.recommendedNextStepCategory !== "no_further_investigation_needed");
-  const ASSIGNEES = ["Sales rep", "Sales manager", "Pre-Sales", "Product", "Legal/Compliance"];
+  const defaultAssignee = ownerName(currentDeal.deal.owner);
+
   const outstandingHtml = outstanding
     .map((f) => {
-      const assignee = assignedItems[f.id];
-      return `
-    <div class="diff-row">
-      ${badge(NEXT_STEP_BADGE, f.recommendedNextStepCategory)}
-      <span class="finding-dimension">${escapeHtml(f.dimension)}</span>
-      ${
-        assignee
-          ? `<span class="unchanged-note" style="margin-left:auto;">Assigned to: <strong>${escapeHtml(assignee)}</strong></span>
-             <button class="webhook-btn" onclick="unassignItem('${f.id}')">Unassign</button>`
-          : `<select id="assignee-${f.id}" style="margin-left:auto; font-family:inherit; font-size:12px;">
-               ${ASSIGNEES.map((a) => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("")}
-             </select>
-             <button class="webhook-btn" onclick="assignItem('${f.id}')">Assign</button>`
+      const assigned = assignedItems[f.id];
+      if (assigned) {
+        return `
+    <div class="assign-row assigned">
+      <div class="assign-row-top">
+        ${badge(NEXT_STEP_BADGE, f.recommendedNextStepCategory)}
+        <span class="finding-dimension">${escapeHtml(f.dimension)}</span>
+        <span class="assign-person" style="margin-left:auto;">
+          <span class="avatar avatar-sm">${escapeHtml(initials(assigned.assignee))}</span>${escapeHtml(assigned.assignee)}
+        </span>
+        <button class="webhook-btn" onclick="unassignItem('${f.id}')">Unassign</button>
+      </div>
+      ${assigned.personNote ? `<div class="citation client-feedback"><span class="cite-source">simulated feedback from ${escapeHtml(assigned.assignee)}</span> — ${escapeHtml(assigned.personNote)}</div>` : ""}
+      ${assigned.internalNote ? `<div class="citation"><span class="cite-source">internal note</span> — ${escapeHtml(assigned.internalNote)}</div>` : ""}
+    </div>`;
       }
+      return `
+    <div class="assign-row">
+      <div class="assign-row-top">
+        ${badge(NEXT_STEP_BADGE, f.recommendedNextStepCategory)}
+        <span class="finding-dimension">${escapeHtml(f.dimension)}</span>
+      </div>
+      <div class="assign-form">
+        <div class="assign-person-field">
+          <span class="avatar avatar-sm" id="assignee-avatar-${f.id}">${escapeHtml(initials(defaultAssignee))}</span>
+          <input class="assign-name-input" list="teamRoster" id="assignee-${f.id}" value="${escapeHtml(defaultAssignee)}" oninput="updateAssigneeAvatar('${f.id}')">
+        </div>
+        <textarea id="assignee-note-${f.id}" class="note-textarea" rows="2" placeholder="Note from them (simulates their feedback)"></textarea>
+        <textarea id="internal-note-${f.id}" class="note-textarea" rows="2" placeholder="Additional internal note"></textarea>
+        <button class="webhook-btn" onclick="assignItem('${f.id}')">Assign</button>
+      </div>
     </div>`;
     })
     .join("");
 
   const outstandingSectionHtml =
     outstanding.length > 0
-      ? `<h4 style="margin-top:0;">Outstanding follow-up (${outstanding.length})</h4><div class="claim-callout">${outstandingHtml}</div>`
+      ? `<h4 style="margin-top:0;">Outstanding follow-up (${outstanding.length})</h4>
+         <datalist id="teamRoster">${TEAM_ROSTER.map((p) => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.role)}</option>`).join("")}</datalist>
+         <div class="assign-list">${outstandingHtml}</div>`
       : `<p class="unchanged-note">No outstanding follow-up — every finding has resolved to "no further investigation needed."</p>`;
+
+  const feedbackToggleHtml = hasFeedback
+    ? `<button class="webhook-btn" onclick="runPipeline('${currentDeal.dealId}', {waiveFeedback: ${feedbackApplied}})">${
+        feedbackApplied ? "Re-run without applying feedback fixture" : "Re-run and apply feedback fixture"
+      }</button>`
+    : "";
 
   // Still-unconfirmed findings, eligible for a manual feedback entry.
   const eligible = finalPortrait.gapFindings.filter((f) => f.evidenceTier === "inferred_hypothesis");
@@ -505,10 +573,12 @@ function renderStage2() {
         <select id="manualFindingSelect">
           ${eligible.map((f) => `<option value="${f.id}" data-dimension="${escapeHtml(f.dimension)}">${escapeHtml(f.dimension)} — ${escapeHtml(f.statement.slice(0, 60))}...</option>`).join("")}
         </select>
-        <label><input type="radio" name="manualConfirm" value="confirm" checked> Client confirms</label>
-        <label><input type="radio" name="manualConfirm" value="partial"> Client confirms with a caveat</label>
-        <label><input type="radio" name="manualConfirm" value="unconfirmed"> Just a note (don't upgrade tier)</label>
-        <textarea id="manualNote" rows="2" placeholder="What did the client/internal contact actually say?" style="font-family:inherit; font-size:13px; padding:6px;"></textarea>
+        <div class="feedback-radio-group">
+          <label class="feedback-radio"><input type="radio" name="manualConfirm" value="confirm" checked onchange="toggleManualNoteField()"> Client confirms</label>
+          <label class="feedback-radio"><input type="radio" name="manualConfirm" value="partial" onchange="toggleManualNoteField()"> Client confirms with a caveat</label>
+          <label class="feedback-radio"><input type="radio" name="manualConfirm" value="unconfirmed" onchange="toggleManualNoteField()"> Other remarks</label>
+        </div>
+        <textarea id="manualNote" class="note-textarea" rows="2" placeholder="What did the client/internal contact actually say?" hidden></textarea>
         <div>
           <button class="webhook-btn" onclick="addManualEntry()">Add entry</button>
           ${manualEntries.length > 0 ? `<button class="run-btn" onclick="submitManualFeedback()" style="margin-left:8px;">Submit ${manualEntries.length} entr${manualEntries.length === 1 ? "y" : "ies"} &amp; re-run synthesis</button>` : ""}
@@ -522,7 +592,10 @@ function renderStage2() {
   <section class="stage tab-panel-header-omitted">
     <div class="stage-body">
       ${outstandingSectionHtml}
-      <h4>Feedback</h4>
+      <div class="section-heading-row">
+        <h4 style="margin:0;">Feedback</h4>
+        ${feedbackToggleHtml}
+      </div>
       ${
         feedbackApplied
           ? `<p class="unchanged-note" style="margin-bottom:12px;">Collected via ${escapeHtml(feedbackInput?.collectedVia ?? "client feedback")}</p>
@@ -534,10 +607,21 @@ function renderStage2() {
   </section>`;
 }
 
+function updateAssigneeAvatar(gapFindingId) {
+  const input = document.getElementById(`assignee-${gapFindingId}`);
+  const avatar = document.getElementById(`assignee-avatar-${gapFindingId}`);
+  if (!input || !avatar) return;
+  avatar.textContent = initials(input.value.trim() || "?");
+}
+
 function assignItem(gapFindingId) {
-  const select = document.getElementById(`assignee-${gapFindingId}`);
-  if (!select) return;
-  assignedItems[gapFindingId] = select.value;
+  const input = document.getElementById(`assignee-${gapFindingId}`);
+  if (!input || !input.value.trim()) return;
+  assignedItems[gapFindingId] = {
+    assignee: input.value.trim(),
+    personNote: document.getElementById(`assignee-note-${gapFindingId}`)?.value.trim() ?? "",
+    internalNote: document.getElementById(`internal-note-${gapFindingId}`)?.value.trim() ?? "",
+  };
   renderDealView();
 }
 
@@ -546,11 +630,20 @@ function unassignItem(gapFindingId) {
   renderDealView();
 }
 
+function toggleManualNoteField() {
+  const choice = document.querySelector('input[name="manualConfirm"]:checked')?.value;
+  const textarea = document.getElementById("manualNote");
+  if (!textarea) return;
+  textarea.hidden = choice === "confirm";
+}
+
 function addManualEntry() {
   const select = document.getElementById("manualFindingSelect");
-  const note = document.getElementById("manualNote").value.trim();
+  if (!select) return;
   const confirmChoice = document.querySelector('input[name="manualConfirm"]:checked').value;
-  if (!select || !note) return;
+  const typedNote = document.getElementById("manualNote")?.value.trim() ?? "";
+  if (confirmChoice !== "confirm" && !typedNote) return; // a caveat or remark needs actual text
+  const note = confirmChoice === "confirm" ? "Confirmed, no additional remarks." : typedNote;
 
   manualEntries.push({
     gapFindingId: select.value,
@@ -599,15 +692,16 @@ function renderStage3() {
 
   const renderCause = (c) => {
     const finding = portrait.gapFindings.find((f) => f.id === c.gapFindingId);
+    const dept = departmentFor(finding?.dimension);
     return `
       <div class="finding">
         <div class="finding-top">
+          <span class="dept-tag">${escapeHtml(dept)}</span>
           <span class="finding-dimension">${c.rank}. ${escapeHtml(finding?.dimension ?? c.gapFindingId)}</span>
           ${badge(TIER_BADGE, finding?.evidenceTier)}
-          ${badge(NEXT_STEP_BADGE, finding?.recommendedNextStepCategory)}
           <span class="finding-score num">score ${c.score}</span>
         </div>
-        <p class="finding-statement">${escapeHtml(c.explanation)}</p>
+        <p class="finding-statement">${escapeHtml(firstSentence(c.explanation))}</p>
       </div>`;
   };
 
@@ -666,20 +760,12 @@ function renderStage3() {
     .filter(([category]) => category !== "no_further_investigation_needed")
     .reduce((sum, [, items]) => sum + items.length, 0);
 
-  const followUpCtaHtml =
-    outstandingCount > 0
-      ? `<div class="claim-callout followup-cta">
-          <span>${outstandingCount} finding${outstandingCount === 1 ? "" : "s"} still need follow-up.</span>
-          <button class="webhook-btn" onclick="switchTab('stage2')">Go to Follow-up tab</button>
-        </div>`
-      : "";
-
   const rollupHtml = Object.entries(pm.nextStepsRollup ?? {})
     .map(([category, items]) => {
       if (items.length === 0) return "";
-      const spec = NEXT_STEP_BADGE[category];
+      const clickable = category !== "no_further_investigation_needed";
       return `
-      <div class="next-step-bucket">
+      <div class="next-step-bucket ${clickable ? "clickable" : ""}" ${clickable ? `onclick="switchTab('stage2')"` : ""}>
         ${badge(NEXT_STEP_BADGE, category)}
         <div class="next-step-bucket-count">${items.length}</div>
         <div class="next-step-bucket-items">${items.map((i) => escapeHtml(i.dimension)).join(", ")}</div>
@@ -703,9 +789,11 @@ function renderStage3() {
       <h4>Summary</h4>
       <p class="summary-text">${escapeHtml(pm.summary)}</p>
 
-      <h4>What happens next</h4>
+      <div class="section-heading-row">
+        <h4 style="margin:0;">Follow-up tracker</h4>
+        ${outstandingCount > 0 ? `<button class="webhook-btn" onclick="switchTab('stage2')">${outstandingCount} outstanding — go to Follow-up tab →</button>` : ""}
+      </div>
       <div class="next-steps-rollup">${rollupHtml}</div>
-      ${followUpCtaHtml}
 
       <h4>Ranked causes (top ${Math.min(LIST_CAP, pm.rankedCauses.length)} of ${pm.rankedCauses.length})</h4>
       ${renderCappedList(pm.rankedCauses, renderCause)}

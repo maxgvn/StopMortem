@@ -31,38 +31,7 @@
   --dot-texture: #e7e6dd;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --page-plane: #0d0d0d;
-    --surface-1: #1a1a19;
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #898781;
-    --hairline: #2c2c2a;
-    --border-ring: rgba(255, 255, 255, 0.10);
-    --accent: #3987e5;
-
-    --status-good: #0ca30c;
-    --status-warning: #fab219;
-    --status-serious: #ec835a;
-    --status-critical: #d03b3b;
-    --status-good-bg: #10240f;
-    --status-warning-bg: #2b230d;
-    --status-serious-bg: #2b1a13;
-    --status-critical-bg: #2b1414;
-    --status-muted-bg: #232320;
-
-    --addon-accent: #9085e9;
-    --addon-accent-bg: #201d33;
-
-    --strategic-accent: #3ec9b3;
-    --strategic-accent-bg: #123430;
-
-    --card-outline: #2c2c2a;
-    --card-outline-hover: #3d3d3a;
-    --dot-texture: #1f1f1d;
-  }
-}
+/* Light theme only — intentionally not following prefers-color-scheme; see :root above. */
 
 * { box-sizing: border-box; }
 
@@ -244,10 +213,6 @@ body {
   background: rgba(252, 252, 251, 0.82);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--hairline);
-}
-
-@media (prefers-color-scheme: dark) {
-  .topbar { background: rgba(13, 13, 13, 0.82); }
 }
 
 .crumbs {
@@ -488,29 +453,95 @@ button.run-btn:disabled {
 /* --- Persistent running banner — always visible while a run is active, survives navigation --- */
 
 .running-banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 24px 22px;
+  border-radius: 10px;
+  margin-top: 16px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  background: linear-gradient(120deg, var(--status-muted-bg) 0%, var(--surface-1) 45%, var(--status-muted-bg) 100%);
+  background-size: 200% 100%;
+  animation: banner-shimmer 6s ease-in-out infinite;
+  border: 1px solid var(--accent);
+  box-shadow: 0 2px 14px rgba(42, 120, 214, 0.14), 0 0 0 1px rgba(42, 120, 214, 0.05) inset;
+}
+
+@keyframes banner-shimmer {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 100% 0%; }
+}
+
+.running-banner.error {
+  border-color: var(--status-critical);
+  background: var(--status-critical-bg);
+  animation: none;
+  box-shadow: 0 2px 14px rgba(208, 59, 59, 0.12);
+}
+
+.running-banner-top {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  background: var(--status-muted-bg);
-  border: 1px solid var(--hairline);
-  margin-bottom: 20px;
-  font-size: 13px;
-  color: var(--text-secondary);
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.running-banner.error .running-banner-top {
+  color: var(--status-critical);
+}
+
+.running-banner-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-left: 32px;
+  line-height: 1.5;
 }
 
 .running-banner .spinner {
-  width: 14px;
-  height: 14px;
+  position: relative;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  border: 2px solid var(--hairline);
+  border: 3px solid var(--border-ring);
   border-top-color: var(--accent);
   animation: spin 0.8s linear infinite;
   flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(42, 120, 214, 0.35);
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.running-banner-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+  background: var(--hairline);
+  overflow: hidden;
+}
+
+.running-banner-progress::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -40%;
+  height: 100%;
+  width: 40%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, transparent, var(--accent) 50%, transparent);
+  box-shadow: 0 0 6px rgba(42, 120, 214, 0.6);
+  animation: indeterminate 1.6s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}
 
 /* --- Tabs --- */
 
@@ -661,16 +692,6 @@ details.fold-more[open] summary::before {
   line-height: 1.5;
 }
 
-/* --- Synthesis -> Follow-up CTA --- */
-
-.followup-cta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
-  margin-bottom: 20px;
-}
 
 /* --- Recovery note --- */
 
@@ -996,4 +1017,153 @@ details.tool-log summary {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 2px;
+}
+
+/* --- Coherent form controls throughout stage bodies --- */
+
+.stage-body select,
+.stage-body input:not([type="radio"]):not([type="checkbox"]) {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--card-outline);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.stage-body select:focus,
+.stage-body input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(42, 120, 214, 0.15);
+}
+
+.note-textarea {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--card-outline);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  resize: vertical;
+  width: 100%;
+}
+
+.note-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(42, 120, 214, 0.15);
+}
+
+/* --- Feedback radio group (only "caveat" / "other remarks" reveal a note field) --- */
+
+.feedback-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feedback-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--card-outline);
+  background: var(--surface-1);
+  cursor: pointer;
+}
+
+.feedback-radio:hover {
+  border-color: var(--card-outline-hover);
+}
+
+.feedback-radio input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+/* --- Section heading + inline action (e.g. "Go to Follow-up tab") --- */
+
+.section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 0 10px;
+}
+
+/* --- Department tag (leads a ranked cause — identity, not a status) --- */
+
+.dept-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* --- Assign flow (Stage 2 outstanding follow-up) --- */
+
+.assign-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.assign-row {
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.assign-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.assign-row.assigned .assign-row-top {
+  margin-bottom: 6px;
+}
+
+.assign-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.assign-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.assign-person-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assign-name-input {
+  flex: 1;
+}
+
+/* --- Clickable next-step bucket (links back to Follow-up tab) --- */
+
+.next-step-bucket.clickable {
+  cursor: pointer;
+}
+
+.next-step-bucket.clickable:hover {
+  border-color: var(--accent);
+  box-shadow: 0 1px 4px rgba(11, 11, 11, 0.06);
 }
