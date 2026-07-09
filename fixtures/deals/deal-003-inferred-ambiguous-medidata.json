@@ -17,9 +17,22 @@
   "company": {
     "name": "Medidata Solutions",
     "domain": "medidata.com",
-    "linkedinUrl": "https://www.linkedin.com/company/medidata-solutions"
+    "linkedinUrl": "https://www.linkedin.com/company/medidata-solutions",
+    "hubspot": {
+      "accountTier": "strategic",
+      "existingAnnualValue": 0,
+      "note": "Tagged as a strategic target account (flagship life-sciences logo) — not yet a customer on any product line."
+    }
   },
   "stakeholders": [
+    {
+      "name": "Anthony Costello",
+      "title": "CEO",
+      "company": "medidata.com",
+      "roleHint": "economic_buyer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
+    },
     {
       "name": null,
       "title": "Chief Medical Officer",
@@ -45,6 +58,22 @@
       "engagementEvidence": ["security review 2026-04-20"],
       "lastTouchDate": "2026-04-20",
       "emailSeenInActivity": "it.director.stopmortem-fixture@medidata.com"
+    },
+    {
+      "name": "James McKenna",
+      "title": "Platform Strategy Lead",
+      "company": "medidata.com",
+      "roleHint": "influencer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
+    },
+    {
+      "name": "Brenda Reese",
+      "title": "VP, Client Services - Clinical Operations",
+      "company": "medidata.com",
+      "roleHint": "influencer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
     }
   ],
   "meddpiccNotes": {

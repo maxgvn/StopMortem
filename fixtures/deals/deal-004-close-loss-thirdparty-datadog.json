@@ -16,7 +16,12 @@
   "company": {
     "name": "Datadog",
     "domain": "datadoghq.com",
-    "linkedinUrl": "https://www.linkedin.com/company/datadog"
+    "linkedinUrl": "https://www.linkedin.com/company/datadog",
+    "hubspot": {
+      "accountTier": "strategic",
+      "existingAnnualValue": 0,
+      "note": "Tagged as a strategic target account — largest deal in this quarter's pipeline, high-visibility loss internally."
+    }
   },
   "stakeholders": [
     {

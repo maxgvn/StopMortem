@@ -16,7 +16,10 @@ router.get("/deals", (req, res) => {
       industry: d.meta.industry ?? null,
       company: d.company.name,
       amount: d.deal.amount,
-      closedLostReason: d.deal.closedLostReason,
+      stage: d.deal.stage,
+      closedLostReason: d.deal.closedLostReason ?? null,
+      closedWonReason: d.deal.closedWonReason ?? null,
+      accountTier: d.company.hubspot?.accountTier ?? null,
       hasFeedback: Boolean(getFeedback(d.dealId)),
       activeRun: latestRun ? { runId: latestRun.runId, status: latestRun.status, triggeredBy: latestRun.triggeredBy } : null,
     };
@@ -37,7 +40,10 @@ router.post("/deals/:id/run", (req, res) => {
   const { id } = req.params;
   const waiveFeedback = req.body?.waiveFeedback === true;
   try {
-    getDeal(id); // 404 early if the deal doesn't exist, before starting anything
+    const deal = getDeal(id); // 404 early if the deal doesn't exist, before starting anything
+    if (deal.deal.stage === "closed_won") {
+      return res.status(400).json({ error: "This deal was won — there's no loss to analyze, so a post-mortem isn't applicable." });
+    }
     const feedbackInput = waiveFeedback ? null : getFeedback(id);
     const runId = startRun({ dealId: id, feedbackInput, triggeredBy: "manual" });
     res.status(202).json({ runId, status: "running" });
@@ -51,7 +57,10 @@ router.post("/webhooks/deal-closed", (req, res) => {
   const { dealId } = req.body ?? {};
   if (!dealId) return res.status(400).json({ error: "dealId is required" });
   try {
-    getDeal(dealId);
+    const deal = getDeal(dealId);
+    if (deal.deal.stage === "closed_won") {
+      return res.status(400).json({ error: "This deal was won — there's no loss to analyze, so a post-mortem isn't applicable." });
+    }
     const feedbackInput = getFeedback(dealId);
     const runId = startRun({ dealId, feedbackInput, triggeredBy: "crm_webhook" });
     res.status(202).json({ runId, status: "running", triggeredBy: "crm_webhook" });

@@ -2,6 +2,20 @@ const dealListEl = document.getElementById("dealList");
 const emptyStateEl = document.getElementById("emptyState");
 const dealViewEl = document.getElementById("dealView");
 const statusStripEl = document.getElementById("statusStrip");
+const crumbsEl = document.getElementById("crumbs");
+
+// Per-deal outcome-character accent for the sidebar's left border — a fixed
+// categorical tag per fixture (not derived live from a run), same idea as the
+// pharma add-on's violet: identity, not severity. Won deals get the "clean" green.
+const DEAL_ACCENT = {
+  "deal-001": "#fab219", // Box — documented qualification gap (amber)
+  "deal-002": "#a56a00", // Asana — evidence conflict / pricing (deep amber)
+  "deal-003": "#4a3aa7", // Medidata — pharma / inferred-to-confirmed (violet)
+  "deal-004": "#d03b3b", // Datadog — high-value external loss (red)
+  "deal-005": "#0ca30c", // GitLab — clean external loss (green)
+  "deal-006": "#0ca30c", // Airtable — won
+  "deal-007": "#0ca30c", // Zapier — won
+};
 
 let deals = [];
 let activeDealId = null;
@@ -12,6 +26,7 @@ let runError = null;
 let activeTab = "stage1";
 let pollHandle = null;
 let manualEntries = []; // [{ gapFindingId, dimension, clientConfirms, clientDisputes, note }] — staged, not yet submitted
+let assignedItems = {}; // gapFindingId -> assignee label — local-only, no backend owner system to persist to
 
 const LIST_CAP = 5;
 
@@ -49,6 +64,23 @@ function fmtMoney(n) {
   return `$${Number(n).toLocaleString()}`;
 }
 
+function ownerName(ownerId) {
+  if (!ownerId) return "Unassigned";
+  return ownerId
+    .replace(/^rep_/, "")
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function initials(name) {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
 /** Renders `items` capped to LIST_CAP by score, with the rest behind a fold-out. */
 function renderCappedList(items, renderItem, opts = {}) {
   const sorted = opts.sortByScore === false ? items : [...items].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
@@ -70,6 +102,12 @@ function renderCappedList(items, renderItem, opts = {}) {
 async function loadDeals() {
   deals = await fetch("/api/deals").then((r) => r.json());
   renderSidebar();
+  // Land on a populated deal by default rather than an empty state — the
+  // server auto-triggers a couple of runs at startup (see server.js), so
+  // the first deal is usually already running or complete by the time this loads.
+  if (!activeDealId && deals.length > 0) {
+    selectDeal(deals[0].dealId);
+  }
 }
 
 async function loadStatusStrip() {
@@ -91,9 +129,14 @@ function renderSidebar() {
   dealListEl.innerHTML = deals
     .map((d) => {
       const running = d.activeRun?.status === "running";
+      const isWon = d.stage === "closed_won";
       return `
-    <div class="deal-card ${d.dealId === activeDealId ? "active" : ""}" data-deal-id="${d.dealId}">
-      <div class="deal-card-name">${escapeHtml(d.dealName)}</div>
+    <div class="deal-card ${d.dealId === activeDealId ? "active" : ""}" data-deal-id="${d.dealId}" style="--deal-accent: ${DEAL_ACCENT[d.dealId] ?? "var(--text-muted)"};">
+      <div class="deal-card-name">
+        ${escapeHtml(d.dealName)}
+        ${isWon ? `<span class="badge badge-good deal-card-badge">Won</span>` : ""}
+        ${d.accountTier === "strategic" ? `<span class="badge badge-strategic deal-card-badge">Strategic</span>` : ""}
+      </div>
       <div class="deal-card-meta">
         <span class="deal-card-amount">${fmtMoney(d.amount)}</span>
         <span>·</span>
@@ -123,6 +166,7 @@ async function selectDeal(dealId) {
   dealViewEl.hidden = false;
 
   currentDeal = await fetch(`/api/deals/${dealId}`).then((r) => r.json());
+  crumbsEl.innerHTML = `<b>Deals</b><span>/</span><span>${escapeHtml(currentDeal.company.name)}</span>`;
 
   // Resume an in-progress or already-completed run for this deal, if one exists —
   // this is what makes navigating away and back not "lose" a run.
@@ -198,8 +242,16 @@ setInterval(() => {
 // ---- Main deal view ----
 
 function renderDealView() {
+  const isWon = currentDeal.deal.stage === "closed_won";
   const hasFeedback = deals.find((d) => d.dealId === currentDeal.dealId)?.hasFeedback;
   const isPharma = currentDeal.meta.industry === "life_sciences_pharma";
+  const accountTier = currentDeal.company.hubspot?.accountTier;
+  const stages = currentDeal.deal.pipelineStagesReached ?? [];
+  const deepestStageReached = stages[stages.length - 2] ?? stages[0]; // last stage before closed_won/closed_lost
+  const owner = ownerName(currentDeal.deal.owner);
+  const daysInPipeline = Math.round(
+    (new Date(currentDeal.deal.closeDate) - new Date(currentDeal.deal.createdDate)) / 86400000
+  );
 
   const bannerHtml =
     runStatus === "running"
@@ -208,27 +260,45 @@ function renderDealView() {
       ? `<div class="running-banner" style="color:var(--status-critical); border-color:var(--status-critical);">Error: ${escapeHtml(runError)}</div>`
       : "";
 
+  const runControlsHtml = isWon
+    ? `<p class="unchanged-note">This deal was won — there's no loss to analyze, so a post-mortem isn't applicable here.</p>`
+    : `
+    <div class="run-controls">
+      <button class="run-btn" id="runBtn" ${runStatus === "running" ? "disabled" : ""}>Run post-mortem</button>
+      <button class="webhook-btn" id="webhookBtn" ${runStatus === "running" ? "disabled" : ""} title="Simulates a HubSpot 'Closed Lost' workflow auto-triggering this pipeline — no manual click needed in a real integration">Simulate CRM auto-trigger</button>
+      <label><input type="checkbox" id="waiveFeedback" ${hasFeedback ? "" : "disabled"}> Waive feedback${hasFeedback ? "" : " (none available)"}</label>
+    </div>`;
+
   dealViewEl.innerHTML = `
     <div class="deal-header">
-      <h2>${escapeHtml(currentDeal.meta.dealName)}</h2>
+      <div class="deal-title-row">
+        <h2>${escapeHtml(currentDeal.meta.dealName)}</h2>
+        <span class="${isWon ? "pill-won" : "pill-lost"}">${isWon ? "Closed won" : "Closed lost"}</span>
+      </div>
+      <div class="deal-facts">
+        <span class="owner"><span class="avatar avatar-sm">${escapeHtml(initials(owner))}</span>${escapeHtml(owner)}</span>
+        <span class="sep">·</span>
+        <span>Closed ${escapeHtml(currentDeal.deal.closeDate)}</span>
+        <span class="sep">·</span>
+        <span>${daysInPipeline} days in pipeline</span>
+      </div>
       <div class="deal-header-meta">
-        <span><strong>${fmtMoney(currentDeal.deal.amount)}</strong></span>
-        <span>${escapeHtml(currentDeal.deal.pipelineStagesReached.join(" → "))}</span>
-        <span>Stated reason: "${escapeHtml(currentDeal.deal.closedLostReason)}"</span>
+        <span class="deal-amount-hero">${fmtMoney(currentDeal.deal.amount)}</span>
+        ${isWon ? "" : `<span class="badge badge-muted">Reached: ${escapeHtml(deepestStageReached)}</span>`}
+        ${accountTier === "strategic" ? `<span class="badge badge-strategic">Strategic account</span>` : ""}
         ${isPharma ? `<span class="badge" style="background:var(--addon-accent-bg); color:var(--addon-accent);">Pharma/Life Sciences</span>` : ""}
+        ${isWon ? `<span>Won: "${escapeHtml(currentDeal.deal.closedWonReason)}"</span>` : `<span>Stated reason: "${escapeHtml(currentDeal.deal.closedLostReason)}"</span>`}
       </div>
-      <div class="run-controls">
-        <button class="run-btn" id="runBtn" ${runStatus === "running" ? "disabled" : ""}>Run post-mortem</button>
-        <button class="webhook-btn" id="webhookBtn" ${runStatus === "running" ? "disabled" : ""} title="Simulates a HubSpot 'Closed Lost' workflow auto-triggering this pipeline — no manual click needed in a real integration">Simulate CRM auto-trigger</button>
-        <label><input type="checkbox" id="waiveFeedback" ${hasFeedback ? "" : "disabled"}> Waive feedback${hasFeedback ? "" : " (none available)"}</label>
-      </div>
+      ${runControlsHtml}
       ${bannerHtml}
     </div>
     ${runResult ? renderTabs() : ""}
   `;
 
-  document.getElementById("runBtn").addEventListener("click", () => runPipeline(currentDeal.dealId));
-  document.getElementById("webhookBtn").addEventListener("click", () => runPipeline(currentDeal.dealId, { simulateWebhook: true }));
+  if (!isWon) {
+    document.getElementById("runBtn").addEventListener("click", () => runPipeline(currentDeal.dealId));
+    document.getElementById("webhookBtn").addEventListener("click", () => runPipeline(currentDeal.dealId, { simulateWebhook: true }));
+  }
   attachTabListeners();
 }
 
@@ -383,6 +453,35 @@ function renderStage2() {
     })
     .join("");
 
+  // Findings whose deterministic next-step category is anything other than "no further
+  // investigation needed" — these are the outstanding items a rep/manager should assign.
+  const outstanding = finalPortrait.gapFindings.filter((f) => f.recommendedNextStepCategory !== "no_further_investigation_needed");
+  const ASSIGNEES = ["Sales rep", "Sales manager", "Pre-Sales", "Product", "Legal/Compliance"];
+  const outstandingHtml = outstanding
+    .map((f) => {
+      const assignee = assignedItems[f.id];
+      return `
+    <div class="diff-row">
+      ${badge(NEXT_STEP_BADGE, f.recommendedNextStepCategory)}
+      <span class="finding-dimension">${escapeHtml(f.dimension)}</span>
+      ${
+        assignee
+          ? `<span class="unchanged-note" style="margin-left:auto;">Assigned to: <strong>${escapeHtml(assignee)}</strong></span>
+             <button class="webhook-btn" onclick="unassignItem('${f.id}')">Unassign</button>`
+          : `<select id="assignee-${f.id}" style="margin-left:auto; font-family:inherit; font-size:12px;">
+               ${ASSIGNEES.map((a) => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("")}
+             </select>
+             <button class="webhook-btn" onclick="assignItem('${f.id}')">Assign</button>`
+      }
+    </div>`;
+    })
+    .join("");
+
+  const outstandingSectionHtml =
+    outstanding.length > 0
+      ? `<h4 style="margin-top:0;">Outstanding follow-up (${outstanding.length})</h4><div class="claim-callout">${outstandingHtml}</div>`
+      : `<p class="unchanged-note">No outstanding follow-up — every finding has resolved to "no further investigation needed."</p>`;
+
   // Still-unconfirmed findings, eligible for a manual feedback entry.
   const eligible = finalPortrait.gapFindings.filter((f) => f.evidenceTier === "inferred_hypothesis");
 
@@ -422,6 +521,8 @@ function renderStage2() {
   return `
   <section class="stage tab-panel-header-omitted">
     <div class="stage-body">
+      ${outstandingSectionHtml}
+      <h4>Feedback</h4>
       ${
         feedbackApplied
           ? `<p class="unchanged-note" style="margin-bottom:12px;">Collected via ${escapeHtml(feedbackInput?.collectedVia ?? "client feedback")}</p>
@@ -431,6 +532,18 @@ function renderStage2() {
       ${formHtml}
     </div>
   </section>`;
+}
+
+function assignItem(gapFindingId) {
+  const select = document.getElementById(`assignee-${gapFindingId}`);
+  if (!select) return;
+  assignedItems[gapFindingId] = select.value;
+  renderDealView();
+}
+
+function unassignItem(gapFindingId) {
+  delete assignedItems[gapFindingId];
+  renderDealView();
 }
 
 function addManualEntry() {
@@ -547,7 +660,19 @@ function renderStage3() {
       <p class="finding-statement">${escapeHtml(h.statement)}</p>
     </div>`
       )
-      .join("") || '<p class="unchanged-note">No speculative hypotheses.</p>';
+      .join("") || '<p class="unchanged-note">None — every dimension here is either well-documented or not genuinely in question. That\'s a good sign, not a gap.</p>';
+
+  const outstandingCount = Object.entries(pm.nextStepsRollup ?? {})
+    .filter(([category]) => category !== "no_further_investigation_needed")
+    .reduce((sum, [, items]) => sum + items.length, 0);
+
+  const followUpCtaHtml =
+    outstandingCount > 0
+      ? `<div class="claim-callout followup-cta">
+          <span>${outstandingCount} finding${outstandingCount === 1 ? "" : "s"} still need follow-up.</span>
+          <button class="webhook-btn" onclick="switchTab('stage2')">Go to Follow-up tab</button>
+        </div>`
+      : "";
 
   const rollupHtml = Object.entries(pm.nextStepsRollup ?? {})
     .map(([category, items]) => {
@@ -563,7 +688,13 @@ function renderStage3() {
     .join("");
 
   const deptHtml = (pm.departmentInsights ?? [])
-    .map((d) => `<div class="dept-insight"><span class="dept-name">${escapeHtml(d.department)}</span><span>${escapeHtml(d.insight)}</span></div>`)
+    .map(
+      (d) => `
+    <div class="dept-card">
+      <div class="dept-card-name">${escapeHtml(d.department)}</div>
+      <p class="dept-card-insight">${escapeHtml(d.insight)}</p>
+    </div>`
+    )
     .join("");
 
   return `
@@ -574,6 +705,7 @@ function renderStage3() {
 
       <h4>What happens next</h4>
       <div class="next-steps-rollup">${rollupHtml}</div>
+      ${followUpCtaHtml}
 
       <h4>Ranked causes (top ${Math.min(LIST_CAP, pm.rankedCauses.length)} of ${pm.rankedCauses.length})</h4>
       ${renderCappedList(pm.rankedCauses, renderCause)}
@@ -582,7 +714,7 @@ function renderStage3() {
       ${actionsHtml}
 
       <h4>By department</h4>
-      ${deptHtml || '<p class="unchanged-note">No department insights.</p>'}
+      <div class="dept-grid">${deptHtml || '<p class="unchanged-note">No department insights.</p>'}</div>
 
       <h4>Speculative hypotheses (not actioned)</h4>
       ${speculativeHtml}

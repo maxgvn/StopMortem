@@ -1,0 +1,75 @@
+{
+  "dealId": "deal-006",
+  "meta": {
+    "tier": "closed_won_demo",
+    "dealName": "Airtable — Data Governance Platform"
+  },
+  "deal": {
+    "amount": 65000,
+    "stage": "closed_won",
+    "closeDate": "2026-05-22",
+    "createdDate": "2026-02-10",
+    "pipelineStagesReached": ["qualified", "demo", "proposal_sent", "negotiation", "closed_won"],
+    "closedWonReason": "Champion-led deal, budget confirmed early, no competitor evaluated.",
+    "owner": "rep_jane_doe"
+  },
+  "company": {
+    "name": "Airtable",
+    "domain": "airtable.com",
+    "linkedinUrl": "https://www.linkedin.com/company/airtable",
+    "hubspot": {
+      "accountTier": "standard",
+      "existingAnnualValue": 0,
+      "note": "Net-new logo, not on the strategic account list."
+    }
+  },
+  "stakeholders": [
+    {
+      "name": "Howie Liu",
+      "title": "Co-founder & CEO",
+      "company": "airtable.com",
+      "roleHint": "economic_buyer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
+    },
+    {
+      "name": null,
+      "title": "IT Director",
+      "company": "airtable.com",
+      "roleHint": "economic_buyer_confirmed",
+      "engagementEvidence": ["discovery 2026-02-15", "demo 2026-02-25", "contract signed 2026-05-22"],
+      "lastTouchDate": "2026-05-22"
+    }
+  ],
+  "meddpiccNotes": {
+    "metrics": "IT Director quantified 12 hrs/week saved on access-review reconciliation.",
+    "economicBuyer": "IT Director confirmed budget authority for tools under $75k at kickoff.",
+    "decisionCriteria": "SOC2, SSO, per-seat pricing under $60/mo — all met.",
+    "decisionProcess": "IT Director approves directly, confirmed no further approval layer.",
+    "paperProcess": "Standard MSA, signed without redlines.",
+    "identifyPain": "Manual governance reviews flagged in an internal audit.",
+    "champion": "IT Director drove the deal end-to-end, consistently responsive.",
+    "competition": "None named — no alternative vendor evaluated."
+  },
+  "activityTimeline": [
+    { "date": "2026-02-15", "type": "call", "summary": "Discovery call.", "attendees": ["IT Director"] },
+    { "date": "2026-02-25", "type": "meeting", "summary": "Product demo, positive reception.", "attendees": ["IT Director"] },
+    { "date": "2026-05-22", "type": "email", "summary": "Contract signed.", "attendees": ["IT Director"] }
+  ],
+  "emails": [
+    {
+      "date": "2026-05-22",
+      "from": "IT Director",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: Data Governance Platform — signed",
+      "snippet": "Signed on our end, looking forward to kicking off."
+    }
+  ],
+  "proposal": {
+    "sentDate": "2026-05-01",
+    "summary": "Proposal accepted without objection.",
+    "pricePresented": 65000,
+    "scopeSummary": "Annual license, up to 300 seats, standard onboarding."
+  },
+  "competitorsNamed": []
+}

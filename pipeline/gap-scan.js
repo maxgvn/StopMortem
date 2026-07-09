@@ -18,7 +18,7 @@ For each dimension, decide one evidence tier:
 - "evidence_conflict" — the dimension was captured, but other evidence (activity, proposal, enrichment) contradicts it.
 - "inferred_hypothesis" — no evidence directly speaks to it; you are inferring it. Never present this as a fact.
 
-Not every dimension needs a finding — only create a gapFindings entry for a dimension when there is a genuine gap, conflict, or a hypothesis worth flagging. A dimension with clean, well-corroborated evidence and no ambiguity does not need an entry.
+Not every dimension needs a finding — only create a gapFindings entry for a dimension when there is a genuine gap, conflict, or a hypothesis worth flagging. A dimension with clean, well-corroborated evidence and no ambiguity does not need an entry. If, after reviewing every dimension, the evidence points to one clear, well-substantiated cause and nothing else is genuinely in question, it is correct and expected to produce zero "inferred_hypothesis" findings — do not manufacture a speculative finding on an unrelated dimension just to appear thorough. A short list of confirmed findings and no loose hypotheses is a better outcome than padding.
 
 Every finding must cite the specific evidence it's based on (note field, email, activity entry, proposal, or a tool result) — never assert a conclusion without a citation. Assign a confidence score (0-1) reflecting how certain you are, independent of evidence tier.`;
 }

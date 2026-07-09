@@ -16,7 +16,12 @@
   "company": {
     "name": "GitLab",
     "domain": "gitlab.com",
-    "linkedinUrl": "https://www.linkedin.com/company/gitlab-com"
+    "linkedinUrl": "https://www.linkedin.com/company/gitlab-com",
+    "hubspot": {
+      "accountTier": "standard",
+      "existingAnnualValue": 0,
+      "note": "Net-new prospect, no existing relationship — not on the strategic account list."
+    }
   },
   "stakeholders": [
     {

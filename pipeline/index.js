@@ -36,7 +36,7 @@ export async function runPostMortem({ dealId, feedbackInput = null, frameworkId 
 
   const finalPortrait = feedbackInput ? reconcileFeedback(portrait, feedbackInput, activeFrameworks, deal) : portrait;
 
-  const postmortemDraft = await runStage3Scoring(finalPortrait);
+  const postmortemDraft = await runStage3Scoring(finalPortrait, deal);
   const { postmortem, location } = await finishAndPublish(dealId, postmortemDraft, finalPortrait);
 
   return { portrait, finalPortrait, postmortem, location };
@@ -54,7 +54,7 @@ export async function rerunWithFeedback({ portrait, feedbackInput }) {
 
   const finalPortrait = feedbackInput ? reconcileFeedback(portrait, feedbackInput, activeFrameworks, deal) : portrait;
 
-  const postmortemDraft = await runStage3Scoring(finalPortrait);
+  const postmortemDraft = await runStage3Scoring(finalPortrait, deal);
   const { postmortem, location } = await finishAndPublish(portrait.dealId, postmortemDraft, finalPortrait);
 
   return { portrait, finalPortrait, postmortem, location };

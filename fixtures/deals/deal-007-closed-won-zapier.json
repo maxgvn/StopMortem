@@ -1,0 +1,75 @@
+{
+  "dealId": "deal-007",
+  "meta": {
+    "tier": "closed_won_demo",
+    "dealName": "Zapier — Workflow Automation Add-on"
+  },
+  "deal": {
+    "amount": 38000,
+    "stage": "closed_won",
+    "closeDate": "2026-06-12",
+    "createdDate": "2026-04-01",
+    "pipelineStagesReached": ["qualified", "demo", "proposal_sent", "closed_won"],
+    "closedWonReason": "Fast-moving deal, clear pain, budget pre-approved before first call.",
+    "owner": "rep_jane_doe"
+  },
+  "company": {
+    "name": "Zapier",
+    "domain": "zapier.com",
+    "linkedinUrl": "https://www.linkedin.com/company/zapier",
+    "hubspot": {
+      "accountTier": "standard",
+      "existingAnnualValue": 0,
+      "note": "Net-new logo, not on the strategic account list."
+    }
+  },
+  "stakeholders": [
+    {
+      "name": "Wade Foster",
+      "title": "Co-founder & CEO",
+      "company": "zapier.com",
+      "roleHint": "economic_buyer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
+    },
+    {
+      "name": null,
+      "title": "VP Operations",
+      "company": "zapier.com",
+      "roleHint": "economic_buyer_confirmed",
+      "engagementEvidence": ["discovery 2026-04-05", "demo 2026-04-12", "contract signed 2026-06-12"],
+      "lastTouchDate": "2026-06-12"
+    }
+  ],
+  "meddpiccNotes": {
+    "metrics": "VP Operations estimated 15% reduction in cross-team handoff delays.",
+    "economicBuyer": "VP Operations confirmed as sole budget owner for tools under $45k.",
+    "decisionCriteria": "Integration with existing stack, SOC2 — both met at demo.",
+    "decisionProcess": "VP Operations approves directly, no further approval layer.",
+    "paperProcess": "Standard MSA, signed without redlines.",
+    "identifyPain": "Handoff delays were slipping SLAs, budget pre-approved before the first call.",
+    "champion": "VP Operations drove the deal end-to-end, highly responsive throughout.",
+    "competition": "None named — no alternative vendor evaluated."
+  },
+  "activityTimeline": [
+    { "date": "2026-04-05", "type": "call", "summary": "Discovery call.", "attendees": ["VP Operations"] },
+    { "date": "2026-04-12", "type": "meeting", "summary": "Product demo, no objections raised.", "attendees": ["VP Operations"] },
+    { "date": "2026-06-12", "type": "email", "summary": "Contract signed.", "attendees": ["VP Operations"] }
+  ],
+  "emails": [
+    {
+      "date": "2026-06-12",
+      "from": "VP Operations",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: Workflow Automation Add-on — signed",
+      "snippet": "All signed on our end — excited to get started."
+    }
+  ],
+  "proposal": {
+    "sentDate": "2026-05-20",
+    "summary": "Proposal accepted without objection.",
+    "pricePresented": 38000,
+    "scopeSummary": "Single-team license, annual term."
+  },
+  "competitorsNamed": []
+}

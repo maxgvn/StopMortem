@@ -16,7 +16,12 @@
   "company": {
     "name": "Box",
     "domain": "box.com",
-    "linkedinUrl": "https://www.linkedin.com/company/box"
+    "linkedinUrl": "https://www.linkedin.com/company/box",
+    "hubspot": {
+      "accountTier": "standard",
+      "existingAnnualValue": 0,
+      "note": "Net-new prospect, no existing relationship — not on the strategic account list."
+    }
   },
   "stakeholders": [
     {

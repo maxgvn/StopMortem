@@ -5,11 +5,13 @@ const SYSTEM_PROMPT = `You are the root-cause scoring/synthesis agent in StopMor
 
 You are given a deal's evidence portrait: gap findings that already have a deterministic evidence tier and a numeric rubric score computed by code. Do NOT recompute, alter, or second-guess these scores — they are ground truth inputs.
 
+Write for a sales leadership audience reading this after the fact — they want the high-level conclusion and what to do about it, not a re-narration of the evidence. Lead with the takeaway, not the process. Reference the deal's dollar amount and account tier (strategic vs. standard) from the deal context below where it's relevant to how much attention this loss deserves — a strategic account's loss usually deserves more organizational follow-through than a small standard-tier one, even at a similar dollar amount.
+
 Your job:
-1. Write a short (2-4 sentence) summary of why this deal was likely lost.
+1. Write a short (2-4 sentence) summary of why this deal was likely lost — a high-level conclusion a VP of Sales could read in 10 seconds and understand what happened and whether it matters, not a recap of every finding.
 2. For each non-speculative finding provided (already sorted by score, most important first), write a one-paragraph explanation of its role in the loss, citing the specific evidence attached to it. Rank order follows the provided score order.
-3. Propose remedial actions grouped by category, sourced only from non-speculative findings (documented_gap / evidence_conflict). Never propose an action sourced only from a speculative (inferred_hypothesis) finding — those are diagnosed only, not actioned.
-4. Write department-specific takeaways for exactly these three internal departments: Sales, Pre-Sales, Product. Each is 1-2 sentences, framed for what THAT department specifically should do differently next time — not a repeat of the summary. If a department genuinely has nothing distinct to take from this deal, write "No specific action for this team on this deal" rather than inventing filler.
+3. Propose remedial actions grouped by category, sourced only from non-speculative findings (documented_gap / evidence_conflict). Never propose an action sourced only from a speculative (inferred_hypothesis) finding — those are diagnosed only, not actioned. Make each action concrete and ownable (who/what changes), not a vague sentiment.
+4. Write department-specific takeaways for exactly these three internal departments: Sales, Pre-Sales, Product. Each should be 2-4 sentences: name the specific pattern from THIS deal that's relevant to that department, then state one concrete process or behavior change they should make differently next time — not a repeat of the summary, and not generic advice that could apply to any deal. If a department genuinely has nothing distinct to take from this deal, write "No specific action for this team on this deal" rather than inventing filler — but reach for real specificity before concluding that.
 5. Optionally, ONE sentence noting whether there's any realistic path to re-engage this specific account in the future (e.g. a budget cycle reopening, a stated "revisit next year") — only if the evidence genuinely supports it. This is a minor aside, not a plan — omit it entirely (set to null) if nothing in the evidence supports a recovery angle. Do not speculate beyond what's in the evidence.`;
 
 /** Structured output schema — enforced server-side, so the response can't come back as malformed JSON. */
@@ -80,16 +82,20 @@ function buildNextStepsRollup(gapFindings) {
   return rollup;
 }
 
-export async function runStage3Scoring(portrait) {
+export async function runStage3Scoring(portrait, deal = null) {
   const nonSpeculative = portrait.gapFindings
     .filter((f) => f.evidenceTier !== "inferred_hypothesis")
     .sort((a, b) => b.score - a.score);
   const speculative = portrait.gapFindings.filter((f) => f.evidenceTier === "inferred_hypothesis");
 
+  const dealContextBlock = deal
+    ? `Deal context: $${deal.deal.amount.toLocaleString()} deal at ${deal.company.name}, account tier: ${deal.company.hubspot?.accountTier ?? "unknown"} (${deal.company.hubspot?.note ?? ""}), reached "${deal.deal.pipelineStagesReached?.[deal.deal.pipelineStagesReached.length - 2] ?? "unknown"}" before closing.\n\n`
+    : "";
+
   const client = getAnthropicClient();
   const userMessage = `Deal ID: ${portrait.dealId}
 
-Non-speculative findings (pre-ranked by deterministic score, most important first — do not reorder):
+${dealContextBlock}Non-speculative findings (pre-ranked by deterministic score, most important first — do not reorder):
 ${JSON.stringify(nonSpeculative, null, 2)}
 
 Speculative (inferred_hypothesis) findings — diagnosed only, do NOT create actions for these:

@@ -16,7 +16,12 @@
   "company": {
     "name": "Asana",
     "domain": "asana.com",
-    "linkedinUrl": "https://www.linkedin.com/company/asana"
+    "linkedinUrl": "https://www.linkedin.com/company/asana",
+    "hubspot": {
+      "accountTier": "standard",
+      "existingAnnualValue": 0,
+      "note": "Net-new prospect, no existing relationship — not on the strategic account list."
+    }
   },
   "stakeholders": [
     {
