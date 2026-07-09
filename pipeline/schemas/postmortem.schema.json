@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PostMortem",
+  "type": "object",
+  "required": ["dealId", "generatedAt", "rankedCauses", "actions", "summary"],
+  "properties": {
+    "dealId": { "type": "string" },
+    "generatedAt": { "type": "string" },
+    "summary": { "type": "string" },
+    "rankedCauses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gapFindingId", "rank", "score", "explanation"],
+        "properties": {
+          "gapFindingId": { "type": "string" },
+          "rank": { "type": "integer" },
+          "score": { "type": "number" },
+          "explanation": { "type": "string" },
+          "evidenceCitations": { "type": "array" }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "description", "sourceGapFindingIds"],
+        "properties": {
+          "category": { "type": "string" },
+          "description": { "type": "string" },
+          "sourceGapFindingIds": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "speculativeHypotheses": {
+      "type": "array",
+      "description": "Grey-tier findings not converted into actions — diagnosed only, per the guardrail that speculation is never actioned.",
+      "items": { "type": "object" }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "thirdPartyReview": {
+    "minDealAmount": 75000,
+    "minPipelineStagesReached": ["proposal_sent", "negotiation"],
+    "requireBothConditions": true,
+    "note": "Triggers 'full_third_party_review' only when the deal was both materially important (amount) AND close to winning (deep pipeline progress)."
+  },
+  "clientCallVsInternalFollowup": {
+    "ambiguityConfidenceCeiling": 0.6,
+    "note": "A finding with confidence at or below this ceiling and no internal owner able to resolve it escalates to a client call instead of internal follow-up."
+  }
+}

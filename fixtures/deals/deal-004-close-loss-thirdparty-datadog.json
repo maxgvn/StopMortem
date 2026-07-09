@@ -1,0 +1,82 @@
+{
+  "dealId": "deal-004",
+  "meta": {
+    "tier": "close_loss_thirdparty_demo",
+    "dealName": "Datadog — Security & Compliance Suite"
+  },
+  "deal": {
+    "amount": 120000,
+    "stage": "closed_lost",
+    "closeDate": "2026-06-28",
+    "createdDate": "2026-01-05",
+    "pipelineStagesReached": ["qualified", "demo", "proposal_sent", "negotiation", "closed_lost"],
+    "closedLostReason": "Budget freeze",
+    "owner": "rep_jane_doe"
+  },
+  "company": {
+    "name": "Datadog",
+    "domain": "datadoghq.com",
+    "linkedinUrl": "https://www.linkedin.com/company/datadog"
+  },
+  "stakeholders": [
+    {
+      "name": "Olivier Pomel",
+      "title": "Co-founder & CEO",
+      "company": "datadoghq.com",
+      "roleHint": "economic_buyer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
+    },
+    {
+      "name": null,
+      "title": "VP Security & Compliance",
+      "company": "datadoghq.com",
+      "roleHint": "economic_buyer_confirmed",
+      "engagementEvidence": ["discovery 2026-01-15", "demo 2026-01-28", "exec review 2026-03-10", "final negotiation 2026-06-10"],
+      "lastTouchDate": "2026-06-10"
+    },
+    {
+      "name": null,
+      "title": "Compliance Manager",
+      "company": "datadoghq.com",
+      "roleHint": "champion",
+      "engagementEvidence": ["discovery 2026-01-15", "demo 2026-01-28", "weekly syncs through May"],
+      "lastTouchDate": "2026-06-10"
+    }
+  ],
+  "meddpiccNotes": {
+    "metrics": "VP Security projected $400k/year in avoided audit remediation costs.",
+    "economicBuyer": "VP Security & Compliance confirmed as budget owner; attended exec review personally.",
+    "decisionCriteria": "SOC2 Type II, FedRAMP roadmap, dedicated CSM.",
+    "decisionProcess": "VP Security approves with CFO sign-off required above $100k — noted explicitly in 2026-03-10 exec review.",
+    "paperProcess": "Legal review started 2026-05-01, redlines exchanged twice, nearly finalized by June.",
+    "identifyPain": "Upcoming SOC2 Type II audit with known compliance gaps flagged by external auditor.",
+    "champion": "Compliance Manager ran weekly working sessions with our team through May, consistently positive.",
+    "competition": "Vanta named early as an alternative but ruled out for lacking a dedicated CSM model."
+  },
+  "activityTimeline": [
+    { "date": "2026-01-15", "type": "call", "summary": "Discovery call.", "attendees": ["VP Security & Compliance", "Compliance Manager"] },
+    { "date": "2026-01-28", "type": "meeting", "summary": "Product demo.", "attendees": ["VP Security & Compliance", "Compliance Manager"] },
+    { "date": "2026-03-10", "type": "meeting", "summary": "Executive review; VP Security confirms budget authority and CFO sign-off requirement above $100k.", "attendees": ["VP Security & Compliance"] },
+    { "date": "2026-05-01", "type": "email", "summary": "Legal review kicked off; redlines exchanged.", "attendees": ["Compliance Manager"] },
+    { "date": "2026-06-10", "type": "call", "summary": "Final negotiation call. VP Security says a company-wide spending freeze was just announced and all new contracts above $100k are paused indefinitely.", "attendees": ["VP Security & Compliance", "Compliance Manager"] }
+  ],
+  "emails": [
+    {
+      "date": "2026-06-10",
+      "from": "VP Security & Compliance",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: Final terms — Security & Compliance Suite",
+      "snippet": "Genuinely disappointing timing — a company-wide spending freeze on new contracts over $100k was just announced this week. This is on hold indefinitely, not a no."
+    }
+  ],
+  "proposal": {
+    "sentDate": "2026-04-15",
+    "summary": "Proposal accepted in principle; only blocker at close was the company-wide budget freeze, unrelated to product fit or pricing objections.",
+    "pricePresented": 120000,
+    "scopeSummary": "Full security & compliance suite, dedicated CSM, multi-year term option."
+  },
+  "competitorsNamed": [
+    { "name": "Vanta", "domain": "vanta.com" }
+  ]
+}

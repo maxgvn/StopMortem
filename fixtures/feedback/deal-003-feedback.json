@@ -1,0 +1,11 @@
+{
+  "dealId": "deal-003",
+  "collectedVia": "rep_call_with_client",
+  "collectedDate": "2026-06-25",
+  "findings": {
+    "deal-003-competition": {
+      "clientConfirms": true,
+      "note": "The VP Clinical Development told the rep directly: Veeva offered an emergency multi-year renewal discount on Vault CTMS during our negotiation window that made expanding their existing contract cheaper than switching. It was a budget-cycle timing issue on their end, not dissatisfaction with our product."
+    }
+  }
+}

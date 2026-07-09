@@ -1,0 +1,70 @@
+{
+  "dealId": "deal-001",
+  "meta": {
+    "tier": "documented_gap_demo",
+    "dealName": "Box — Data Governance Platform"
+  },
+  "deal": {
+    "amount": 42000,
+    "stage": "closed_lost",
+    "closeDate": "2026-05-18",
+    "createdDate": "2026-02-03",
+    "pipelineStagesReached": ["qualified", "demo", "proposal_sent", "closed_lost"],
+    "closedLostReason": "Not a priority right now",
+    "owner": "rep_jane_doe"
+  },
+  "company": {
+    "name": "Box",
+    "domain": "box.com",
+    "linkedinUrl": "https://www.linkedin.com/company/box"
+  },
+  "stakeholders": [
+    {
+      "name": "Aaron Levie",
+      "title": "CEO",
+      "company": "box.com",
+      "roleHint": "economic_buyer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
+    },
+    {
+      "name": null,
+      "title": "IT Director",
+      "company": "box.com",
+      "roleHint": "champion",
+      "engagementEvidence": ["demo on 2026-02-20", "email thread through 2026-03-15"],
+      "lastTouchDate": "2026-03-15"
+    }
+  ],
+  "meddpiccNotes": {
+    "metrics": "IT Director cited ~15 hrs/week of manual access-review work the tool would eliminate.",
+    "economicBuyer": null,
+    "decisionCriteria": "SOC2 coverage, SSO support, per-seat pricing under $50/mo.",
+    "decisionProcess": "Unclear — IT Director said 'I'll need to check with leadership' but never specified who.",
+    "paperProcess": "Not discussed.",
+    "identifyPain": "Manual quarterly access reviews across shared drives, flagged in a recent internal audit.",
+    "champion": "IT Director drove the demo and two follow-up calls, then went quiet.",
+    "competition": "None named."
+  },
+  "activityTimeline": [
+    { "date": "2026-02-10", "type": "call", "summary": "Discovery call with IT Director.", "attendees": ["IT Director"] },
+    { "date": "2026-02-20", "type": "meeting", "summary": "Product demo.", "attendees": ["IT Director", "two members of IT team"] },
+    { "date": "2026-03-15", "type": "email", "summary": "IT Director says he needs to 'check with leadership' before proceeding.", "attendees": ["IT Director"] }
+  ],
+  "emails": [
+    {
+      "date": "2026-03-15",
+      "from": "IT Director",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: Data Governance Platform — next steps",
+      "snippet": "This looks great, but I'll need to check with leadership before we can move forward. Will follow up."
+    }
+  ],
+  "proposal": {
+    "sentDate": "2026-03-20",
+    "summary": "Standard proposal sent to IT Director; no confirmed recipient above IT Director level.",
+    "pricePresented": 42000,
+    "scopeSummary": "Annual license, up to 500 seats, standard onboarding."
+  },
+  "competitorsNamed": []
+}

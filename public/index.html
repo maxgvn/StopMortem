@@ -2,9 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StopMortem</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-StopMortem
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>StopMortem</h1>
+      <p class="sidebar-sub">Lost-deal post-mortems</p>
+    </div>
+    <div id="dealList" class="deal-list"></div>
+  </aside>
+
+  <main class="main">
+    <div id="emptyState" class="empty-state">
+      <p>Select a deal to begin.</p>
+    </div>
+    <div id="dealView" class="deal-view" hidden></div>
+  </main>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>

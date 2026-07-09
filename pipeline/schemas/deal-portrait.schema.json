@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DealPortrait",
+  "type": "object",
+  "required": ["dealId", "framework", "claimUnderReview", "stakeholderMap", "competitiveContext", "gapFindings", "toolCallLog", "generatedAt"],
+  "properties": {
+    "dealId": { "type": "string" },
+    "framework": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": { "id": { "type": "string" }, "version": { "type": "string" } }
+    },
+    "generatedAt": { "type": "string" },
+    "claimUnderReview": {
+      "type": "object",
+      "required": ["field", "value", "note"],
+      "properties": {
+        "field": { "type": "string" },
+        "value": { "type": ["string", "null"] },
+        "note": { "type": "string" }
+      }
+    },
+    "stakeholderMap": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "roleHint"],
+        "properties": {
+          "name": { "type": ["string", "null"] },
+          "title": { "type": "string" },
+          "seniorityLevel": { "type": ["string", "null"] },
+          "company": { "type": "string" },
+          "roleHint": { "type": "string" },
+          "engagementEvidence": { "type": "array", "items": { "type": "string" } },
+          "lastTouchDate": { "type": ["string", "null"] },
+          "enrichment": {
+            "type": "object",
+            "properties": {
+              "sillage": {},
+              "fullenrich": {}
+            }
+          }
+        }
+      }
+    },
+    "competitiveContext": {
+      "type": "object",
+      "properties": {
+        "competitorsNamed": { "type": "array" },
+        "marketSignals": { "type": "array" }
+      }
+    },
+    "gapFindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "dimension", "evidenceTier", "statement", "evidenceCitations", "confidence"],
+        "properties": {
+          "id": { "type": "string" },
+          "dimension": { "type": "string" },
+          "evidenceTier": { "type": "string", "enum": ["documented_gap", "evidence_conflict", "inferred_hypothesis"] },
+          "statement": { "type": "string" },
+          "evidenceCitations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["source", "ref"],
+              "properties": {
+                "source": { "type": "string", "enum": ["note", "email", "activity", "proposal", "enrichment", "client_feedback"] },
+                "ref": { "type": "string" },
+                "quote": { "type": "string" }
+              }
+            }
+          },
+          "conflictingEvidence": { "type": "array" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "recommendedNextStepCategory": {
+            "type": "string",
+            "enum": ["no_further_investigation_needed", "some_internal_followup_needed", "client_call_needed", "full_third_party_review"]
+          },
+          "nextStepRationale": { "type": "string" },
+          "score": { "type": "number" }
+        }
+      }
+    },
+    "openQuestionsForFeedback": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": { "gapFindingId": { "type": "string" }, "question": { "type": "string" } }
+      }
+    },
+    "toolCallLog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool", "timestampIso"],
+        "properties": {
+          "tool": { "type": "string" },
+          "argsSummary": { "type": "string" },
+          "resultSummary": { "type": "string" },
+          "timestampIso": { "type": "string" }
+        }
+      }
+    }
+  }
+}

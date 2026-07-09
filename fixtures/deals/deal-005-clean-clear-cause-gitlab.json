@@ -1,0 +1,71 @@
+{
+  "dealId": "deal-005",
+  "meta": {
+    "tier": "clean_clear_cause_demo",
+    "dealName": "GitLab — License Management Add-on"
+  },
+  "deal": {
+    "amount": 15000,
+    "stage": "closed_lost",
+    "closeDate": "2026-05-30",
+    "createdDate": "2026-03-10",
+    "pipelineStagesReached": ["qualified", "demo", "proposal_sent", "closed_lost"],
+    "closedLostReason": "Budget cut",
+    "owner": "rep_jane_doe"
+  },
+  "company": {
+    "name": "GitLab",
+    "domain": "gitlab.com",
+    "linkedinUrl": "https://www.linkedin.com/company/gitlab-com"
+  },
+  "stakeholders": [
+    {
+      "name": "Sid Sijbrandij",
+      "title": "Founder & CEO",
+      "company": "gitlab.com",
+      "roleHint": "economic_buyer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
+    },
+    {
+      "name": null,
+      "title": "Engineering Manager",
+      "company": "gitlab.com",
+      "roleHint": "economic_buyer_confirmed",
+      "engagementEvidence": ["discovery 2026-03-12", "demo 2026-03-20", "budget cut notice 2026-05-15"],
+      "lastTouchDate": "2026-05-15"
+    }
+  ],
+  "meddpiccNotes": {
+    "metrics": "Engineering Manager estimated 5 hrs/month saved on license reconciliation.",
+    "economicBuyer": "Engineering Manager confirmed as sole budget owner for tools under $20k.",
+    "decisionCriteria": "Simple integration, low lift, no security review needed for this deal size.",
+    "decisionProcess": "Engineering Manager approves directly; confirmed no further approval needed.",
+    "paperProcess": "Not applicable — deal size below procurement threshold.",
+    "identifyPain": "Manual license tracking causing occasional overages.",
+    "champion": "Engineering Manager was the sole stakeholder throughout, consistently engaged.",
+    "competition": "None named — no alternative vendor evaluated."
+  },
+  "activityTimeline": [
+    { "date": "2026-03-12", "type": "call", "summary": "Discovery call.", "attendees": ["Engineering Manager"] },
+    { "date": "2026-03-20", "type": "meeting", "summary": "Product demo, positive reception, no objections.", "attendees": ["Engineering Manager"] },
+    { "date": "2026-04-02", "type": "email", "summary": "Proposal sent, verbal agreement to proceed pending internal cost-center approval.", "attendees": ["Engineering Manager"] },
+    { "date": "2026-05-15", "type": "email", "summary": "Engineering Manager reports an org-wide Q3 tooling budget cut affecting all non-essential software purchases under $25k; this purchase was cut along with several others on the same list.", "attendees": ["Engineering Manager"] }
+  ],
+  "emails": [
+    {
+      "date": "2026-05-15",
+      "from": "Engineering Manager",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: License Management Add-on — moving forward?",
+      "snippet": "Wanted to give you a heads up before this goes stale in the pipeline: we just got hit with an org-wide Q3 tooling budget cut. Every non-essential software purchase under $25k got cut, including this one. Nothing to do with the product — we liked it. Might revisit next fiscal year."
+    }
+  ],
+  "proposal": {
+    "sentDate": "2026-04-02",
+    "summary": "Verbal agreement to proceed before the budget cut; no pricing or scope objections at any point.",
+    "pricePresented": 15000,
+    "scopeSummary": "Single-team license, annual term."
+  },
+  "competitorsNamed": []
+}

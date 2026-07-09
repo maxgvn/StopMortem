@@ -1,0 +1,92 @@
+{
+  "dealId": "deal-003",
+  "meta": {
+    "tier": "inferred_hypothesis_demo",
+    "dealName": "Medidata Solutions — Clinical Trial Data Integration Platform"
+  },
+  "deal": {
+    "amount": 90000,
+    "stage": "closed_lost",
+    "closeDate": "2026-06-20",
+    "createdDate": "2026-02-25",
+    "pipelineStagesReached": ["qualified", "demo", "proposal_sent", "negotiation", "closed_lost"],
+    "closedLostReason": "Timing wasn't right",
+    "owner": "rep_jane_doe"
+  },
+  "company": {
+    "name": "Medidata Solutions",
+    "domain": "medidata.com",
+    "linkedinUrl": "https://www.linkedin.com/company/medidata-solutions"
+  },
+  "stakeholders": [
+    {
+      "name": null,
+      "title": "Chief Medical Officer",
+      "company": "medidata.com",
+      "roleHint": "economic_buyer_confirmed",
+      "engagementEvidence": ["proposal review 2026-04-02", "negotiation call 2026-05-01"],
+      "lastTouchDate": "2026-05-01"
+    },
+    {
+      "name": null,
+      "title": "VP Clinical Development",
+      "company": "medidata.com",
+      "roleHint": "champion",
+      "engagementEvidence": ["discovery 2026-03-01", "demo 2026-03-10", "technical deep-dive 2026-03-22", "proposal review 2026-04-02"],
+      "lastTouchDate": "2026-04-15",
+      "emailSeenInActivity": "vp.clinicaldev.stopmortem-fixture@medidata.com"
+    },
+    {
+      "name": null,
+      "title": "IT Director",
+      "company": "medidata.com",
+      "roleHint": "influencer",
+      "engagementEvidence": ["security review 2026-04-20"],
+      "lastTouchDate": "2026-04-20",
+      "emailSeenInActivity": "it.director.stopmortem-fixture@medidata.com"
+    }
+  ],
+  "meddpiccNotes": {
+    "metrics": "VP Clinical Development quantified expected 30% reduction in data-reconciliation time across trial sites.",
+    "economicBuyer": "Chief Medical Officer confirmed as budget owner in the 2026-04-02 proposal review call.",
+    "decisionCriteria": "21 CFR Part 11 compliance, integration with existing EDC/CTMS stack, annual contract preferred.",
+    "decisionProcess": "CMO approves directly for spend under $100k; confirmed in notes.",
+    "paperProcess": "IT security review completed 2026-04-20, no issues flagged.",
+    "identifyPain": "Recurring data-reconciliation delays across multi-site trials, cited in an internal ops review the VP referenced.",
+    "champion": "VP Clinical Development led technical evaluation, gave strong internal endorsement per CMO.",
+    "competition": "Veeva Vault CTMS named as an existing platform being evaluated for expansion instead of a net-new purchase."
+  },
+  "activityTimeline": [
+    { "date": "2026-03-01", "type": "call", "summary": "Discovery call.", "attendees": ["VP Clinical Development"] },
+    { "date": "2026-03-10", "type": "meeting", "summary": "Product demo, positive reception.", "attendees": ["VP Clinical Development"] },
+    { "date": "2026-03-22", "type": "call", "summary": "Technical deep-dive, VP gave strong internal endorsement.", "attendees": ["VP Clinical Development"] },
+    { "date": "2026-04-02", "type": "call", "summary": "Proposal review; CMO confirms budget authority and decision process.", "attendees": ["Chief Medical Officer"] },
+    { "date": "2026-04-20", "type": "call", "summary": "IT security review completed, no blockers.", "attendees": ["IT Director"] },
+    { "date": "2026-05-01", "type": "call", "summary": "Negotiation call — CMO asks for a longer evaluation period before committing. No further contact after.", "attendees": ["Chief Medical Officer"] }
+  ],
+  "emails": [
+    {
+      "date": "2026-04-20",
+      "from": "it.director.stopmortem-fixture@medidata.com",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: Security review — Clinical Trial Data Integration Platform",
+      "snippet": "Security review complete on our end, no concerns. Passing back to the clinical team for next steps."
+    },
+    {
+      "date": "2026-05-01",
+      "from": "vp.clinicaldev.stopmortem-fixture@medidata.com",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: Contract terms",
+      "snippet": "Everything looks solid on our end. We'd like a bit more runway to finish evaluating before signing — will circle back."
+    }
+  ],
+  "proposal": {
+    "sentDate": "2026-04-05",
+    "summary": "Proposal accepted in principle during 2026-04-02 call; no pricing or scope objections raised at any point.",
+    "pricePresented": 90000,
+    "scopeSummary": "Full trial data integration suite, EDC/CTMS connectors, annual contract."
+  },
+  "competitorsNamed": [
+    { "name": "Veeva Vault CTMS", "domain": "veeva.com" }
+  ]
+}

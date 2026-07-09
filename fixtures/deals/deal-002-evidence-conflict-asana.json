@@ -1,0 +1,80 @@
+{
+  "dealId": "deal-002",
+  "meta": {
+    "tier": "evidence_conflict_demo",
+    "dealName": "Asana — Workflow Automation Add-on"
+  },
+  "deal": {
+    "amount": 58000,
+    "stage": "closed_lost",
+    "closeDate": "2026-06-02",
+    "createdDate": "2026-01-14",
+    "pipelineStagesReached": ["qualified", "demo", "proposal_sent", "negotiation", "closed_lost"],
+    "closedLostReason": "Went with a competitor",
+    "owner": "rep_jane_doe"
+  },
+  "company": {
+    "name": "Asana",
+    "domain": "asana.com",
+    "linkedinUrl": "https://www.linkedin.com/company/asana"
+  },
+  "stakeholders": [
+    {
+      "name": "Dustin Moskovitz",
+      "title": "Co-founder & CEO",
+      "company": "asana.com",
+      "roleHint": "economic_buyer_candidate",
+      "engagementEvidence": [],
+      "lastTouchDate": null
+    },
+    {
+      "name": null,
+      "title": "VP Operations",
+      "company": "asana.com",
+      "roleHint": "champion",
+      "engagementEvidence": ["discovery call 2026-01-20", "demo 2026-02-05", "budget discussion 2026-02-18"],
+      "lastTouchDate": "2026-03-02"
+    }
+  ],
+  "meddpiccNotes": {
+    "metrics": "VP Ops estimated 20% reduction in cross-team handoff delays.",
+    "economicBuyer": "VP Operations described as 'the one who signs off on tools under $75k' — treated as confirmed economic buyer in CRM notes.",
+    "decisionCriteria": "Integration with existing PM tool, SOC2, sub-$45k annual budget explicitly stated by VP Ops on 2026-02-18 call.",
+    "decisionProcess": "VP Ops approves directly; no further approval layer mentioned.",
+    "paperProcess": "Standard MSA, no unusual redlines expected per VP Ops.",
+    "identifyPain": "Cross-team handoffs were slipping SLAs by 2-3 days on average.",
+    "champion": "VP Operations drove every call, was highly engaged through mid-February, then stopped responding after the proposal was sent.",
+    "competition": "Rippling Workflows named once, early, as 'something we're also looking at.'"
+  },
+  "activityTimeline": [
+    { "date": "2026-01-20", "type": "call", "summary": "Discovery call with VP Operations.", "attendees": ["VP Operations"] },
+    { "date": "2026-02-05", "type": "meeting", "summary": "Product demo, VP Operations very engaged, asked detailed integration questions.", "attendees": ["VP Operations", "two ops team members"] },
+    { "date": "2026-02-18", "type": "call", "summary": "Budget discussion. VP Operations states budget ceiling is $45,000/year.", "attendees": ["VP Operations"] },
+    { "date": "2026-03-02", "type": "email", "summary": "VP Operations acknowledges receiving proposal, says will review internally.", "attendees": ["VP Operations"] }
+  ],
+  "emails": [
+    {
+      "date": "2026-02-19",
+      "from": "VP Operations",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: Budget for FY planning",
+      "snippet": "Just to confirm from our call — anything we bring on this cycle needs to land under $45k annually. Above that and I have to escalate."
+    },
+    {
+      "date": "2026-03-02",
+      "from": "VP Operations",
+      "to": ["rep_jane_doe"],
+      "subject": "Re: Proposal — Workflow Automation",
+      "snippet": "Got the proposal, thanks. Will review internally and get back to you."
+    }
+  ],
+  "proposal": {
+    "sentDate": "2026-03-01",
+    "summary": "Proposal priced at $58,000/year — above the $45,000 ceiling VP Operations stated two weeks earlier. No note in CRM flagging the mismatch before sending.",
+    "pricePresented": 58000,
+    "scopeSummary": "Full workflow automation suite, unlimited seats, premium support tier."
+  },
+  "competitorsNamed": [
+    { "name": "Rippling Workflows", "domain": "rippling.com" }
+  ]
+}

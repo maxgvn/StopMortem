@@ -1,0 +1,63 @@
+{
+  "id": "meddpicc",
+  "label": "MEDDPICC",
+  "description": "B2B SaaS qualification framework. Demo instance of the swappable gap-scan framework — not hardcoded into pipeline logic.",
+  "dimensions": [
+    {
+      "key": "metrics",
+      "label": "Metrics",
+      "description": "Quantified business impact / ROI the buyer expects.",
+      "requiredEvidenceFields": ["meddpiccNotes.metrics"],
+      "causalWeightHint": 0.6
+    },
+    {
+      "key": "economicBuyer",
+      "label": "Economic Buyer",
+      "description": "The person with final budget authority; whether they were identified and directly engaged.",
+      "requiredEvidenceFields": ["meddpiccNotes.economicBuyer", "stakeholders[].roleHint=economic_buyer"],
+      "causalWeightHint": 0.95
+    },
+    {
+      "key": "decisionCriteria",
+      "label": "Decision Criteria",
+      "description": "The formal/informal criteria the buying committee will judge vendors against.",
+      "requiredEvidenceFields": ["meddpiccNotes.decisionCriteria"],
+      "causalWeightHint": 0.7
+    },
+    {
+      "key": "decisionProcess",
+      "label": "Decision Process",
+      "description": "Steps and approvals required to reach a signed contract.",
+      "requiredEvidenceFields": ["meddpiccNotes.decisionProcess"],
+      "causalWeightHint": 0.65
+    },
+    {
+      "key": "paperProcess",
+      "label": "Paper Process",
+      "description": "Procurement, legal, and security review steps required before signature.",
+      "requiredEvidenceFields": ["meddpiccNotes.paperProcess"],
+      "causalWeightHint": 0.4
+    },
+    {
+      "key": "identifyPain",
+      "label": "Identify Pain",
+      "description": "The business pain driving urgency to buy.",
+      "requiredEvidenceFields": ["meddpiccNotes.identifyPain"],
+      "causalWeightHint": 0.75
+    },
+    {
+      "key": "champion",
+      "label": "Champion",
+      "description": "An internal advocate with influence who actively sells on the vendor's behalf.",
+      "requiredEvidenceFields": ["meddpiccNotes.champion", "stakeholders[].roleHint=champion"],
+      "causalWeightHint": 0.85
+    },
+    {
+      "key": "competition",
+      "label": "Competition",
+      "description": "Known competing vendors or the status-quo/build-it-ourselves alternative.",
+      "requiredEvidenceFields": ["meddpiccNotes.competition", "competitorsNamed"],
+      "causalWeightHint": 0.55
+    }
+  ]
+}

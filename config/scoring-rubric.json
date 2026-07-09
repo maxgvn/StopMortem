@@ -1,0 +1,13 @@
+{
+  "tierWeights": {
+    "documented_gap": 1.0,
+    "evidence_conflict": 0.7,
+    "inferred_hypothesis": 0.3
+  },
+  "corroborationBonus": {
+    "perAdditionalCitation": 0.08,
+    "max": 0.3
+  },
+  "defaultCausalWeight": 0.5,
+  "note": "inferred_hypothesis tier weight is informational only — grey-tier findings are never converted into actions regardless of score."
+}
