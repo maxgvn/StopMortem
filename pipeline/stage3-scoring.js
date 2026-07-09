@@ -97,15 +97,26 @@ ${JSON.stringify(speculative, null, 2)}`;
 
   const response = await client.messages.create({
     model: STAGE3_MODEL,
-    max_tokens: 4000,
+    max_tokens: 8000,
     thinking: { type: "adaptive", display: "summarized" },
     system: SYSTEM_PROMPT,
     output_config: { format: { type: "json_schema", schema: POSTMORTEM_OUTPUT_SCHEMA } },
     messages: [{ role: "user", content: userMessage }],
   });
 
+  if (response.stop_reason === "max_tokens") {
+    throw new Error(`Stage 3 hit max_tokens before finishing its final answer for deal ${portrait.dealId} — increase max_tokens or reduce the number of findings passed in.`);
+  }
+
   const textBlock = response.content.find((b) => b.type === "text");
-  const parsed = JSON.parse(textBlock.text);
+  let parsed;
+  try {
+    parsed = JSON.parse(textBlock.text);
+  } catch (err) {
+    throw new Error(
+      `Stage 3 final answer failed to parse for deal ${portrait.dealId}. stop_reason=${response.stop_reason}, text length=${textBlock?.text?.length ?? 0}, parse error: ${err.message}`
+    );
+  }
 
   return {
     dealId: portrait.dealId,

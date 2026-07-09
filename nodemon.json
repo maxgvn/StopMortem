@@ -1,0 +1,3 @@
+{
+  "ignore": ["runs/*", "node_modules/*", ".git/*"]
+}

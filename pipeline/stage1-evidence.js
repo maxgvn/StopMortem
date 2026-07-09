@@ -162,7 +162,13 @@ export async function runStage1Evidence(deal, framework, addOnFramework = null) 
         throw new Error(`Stage 1 hit max_tokens before finishing its final answer for deal ${deal.dealId} — increase max_tokens or shorten the required output.`);
       }
       const textBlock = response.content.find((b) => b.type === "text");
-      finalParsed = JSON.parse(textBlock.text);
+      try {
+        finalParsed = JSON.parse(textBlock.text);
+      } catch (err) {
+        throw new Error(
+          `Stage 1 final answer failed to parse for deal ${deal.dealId}. stop_reason=${response.stop_reason}, text length=${textBlock?.text?.length ?? 0}, parse error: ${err.message}. Last 200 chars: ${JSON.stringify(textBlock?.text?.slice(-200))}`
+        );
+      }
       break;
     }
 
