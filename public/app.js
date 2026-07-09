@@ -23,10 +23,17 @@ let currentDeal = null;
 let runResult = null; // { postmortem, portrait, finalPortrait, feedbackApplied, feedbackInput, location }
 let runStatus = "idle"; // idle | running | completed | error
 let runError = null;
+let runMeta = null; // { triggeredBy, startedAt, completedAt } — from the current/latest run, for the header's "last run" line
+let partialPortrait = null; // Stage 1's portrait, visible as soon as it's ready — before Stage 2/3 finish
+let runStage = null; // "evidence_gathering" | "synthesizing" — which phase of a running pipeline is active
 let activeTab = "stage1";
 let pollHandle = null;
 let manualEntries = []; // [{ gapFindingId, dimension, clientConfirms, clientDisputes, note }] — staged, not yet submitted
-let assignedItems = {}; // gapFindingId -> { assignee, personNote, internalNote } — local-only, no backend owner system to persist to
+// gapFindingId -> { assignee, status: "assigned" | "waived" } — local-only tracker state.
+// "waived" hides the item from the outstanding count in this tab and in Stage 3's tracker.
+// Actually resolving a finding's evidence happens via submitAssignFeedback(), which calls the
+// real feedback API and re-runs Stage 2/3 — waiving never touches real evidence tiers.
+let assignedItems = {};
 
 const LIST_CAP = 5;
 
@@ -40,7 +47,8 @@ const TEAM_ROSTER = [
 ];
 
 // Heuristic mapping from a MEDDPICC(+add-on) dimension to the department it's most
-// relevant to — purely a frontend label so "Ranked causes" can lead with who owns it.
+// relevant to — purely a frontend label so "Ranked causes" can lead with who owns it,
+// and so the assign flow can default to a plausible owner instead of always the rep.
 const DIMENSION_DEPARTMENT = {
   metrics: "Pre-Sales",
   economicBuyer: "Sales",
@@ -50,14 +58,25 @@ const DIMENSION_DEPARTMENT = {
   identifyPain: "Pre-Sales",
   champion: "Sales",
   competition: "Product",
-  cfr11Compliance: "Product",
-  dataResidency: "Product",
-  validationDocumentation: "Product",
-  securityReviewSignoff: "Product",
+  cfr11Compliance: "Legal/Compliance",
+  dataResidency: "Legal/Compliance",
+  validationDocumentation: "Legal/Compliance",
+  securityReviewSignoff: "Legal/Compliance",
+};
+
+const PERSON_BY_DEPARTMENT = {
+  Sales: "Priya Shah",
+  "Pre-Sales": "Marcus Webb",
+  Product: "Sam Okafor",
+  "Legal/Compliance": "Elena Torres",
 };
 
 function departmentFor(dimension) {
   return DIMENSION_DEPARTMENT[dimension] ?? "Sales";
+}
+
+function defaultAssigneeFor(dimension) {
+  return PERSON_BY_DEPARTMENT[departmentFor(dimension)] ?? TEAM_ROSTER[0].name;
 }
 
 function firstSentence(text) {
@@ -65,6 +84,36 @@ function firstSentence(text) {
   const match = text.match(/^.*?[.!?](?=\s|$)/);
   if (match) return match[0];
   return text.length > 140 ? `${text.slice(0, 140)}…` : text;
+}
+
+/** A text block past `limit` chars shows only its first sentence, with the rest behind a fold. */
+function renderTruncated(text, { limit = 220, cssClass = "" } = {}) {
+  if (!text) return `<p class="${cssClass}"></p>`;
+  if (text.length <= limit) return `<p class="${cssClass}">${escapeHtml(text)}</p>`;
+  return `
+    <p class="${cssClass}">${escapeHtml(firstSentence(text))}</p>
+    <details class="fold-more"><summary>Show full text</summary><p class="${cssClass}">${escapeHtml(text)}</p></details>`;
+}
+
+const TRIGGER_LABEL = {
+  crm_webhook: "Auto-triggered from HubSpot",
+  manual: "Manually triggered",
+  manual_feedback: "Feedback re-run",
+};
+
+function triggerLabel(triggeredBy) {
+  return TRIGGER_LABEL[triggeredBy] ?? triggeredBy ?? "Unknown trigger";
+}
+
+function relativeTime(iso) {
+  if (!iso) return "";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
 const TIER_BADGE = {
@@ -78,7 +127,36 @@ const NEXT_STEP_BADGE = {
   some_internal_followup_needed: { cls: "badge-warning", label: "Internal follow-up" },
   client_call_needed: { cls: "badge-serious", label: "Client call needed" },
   full_third_party_review: { cls: "badge-critical", label: "Third-party review" },
+  waived: { cls: "badge-muted", label: "Waived" },
 };
+
+/** True once someone has locally marked this finding as "no follow-up needed" — doesn't touch real evidence tiers. */
+function isWaived(gapFindingId) {
+  return assignedItems[gapFindingId]?.status === "waived";
+}
+
+/**
+ * Splits a raw nextStepsRollup into the buckets minus anything waived locally, plus a
+ * separate "waived" bucket — so Stage 3's tracker reflects local waives without a rerun.
+ */
+function buildAdjustedRollup(rollup) {
+  const adjusted = {};
+  const waived = [];
+  for (const [category, items] of Object.entries(rollup ?? {})) {
+    if (category === "no_further_investigation_needed") {
+      adjusted[category] = [...items];
+      continue;
+    }
+    const kept = [];
+    for (const item of items) {
+      if (isWaived(item.gapFindingId)) waived.push(item);
+      else kept.push(item);
+    }
+    adjusted[category] = kept;
+  }
+  if (waived.length > 0) adjusted.waived = waived;
+  return adjusted;
+}
 
 const NEXT_STEP_ROLLUP_LABELS = {
   full_third_party_review: "Third-party review ordered",
@@ -180,6 +258,11 @@ function renderSidebar() {
         <span>${escapeHtml(d.company)}</span>
         ${running ? `<span class="running-dot"></span><span class="deal-card-running-label">Running</span>` : ""}
       </div>
+      ${
+        d.activeRun && !running
+          ? `<div class="deal-card-trigger">${escapeHtml(triggerLabel(d.activeRun.triggeredBy))} · ${escapeHtml(relativeTime(d.activeRun.completedAt ?? d.activeRun.startedAt))}</div>`
+          : ""
+      }
     </div>`;
     })
     .join("");
@@ -197,6 +280,9 @@ async function selectDeal(dealId) {
   runResult = null;
   runStatus = "idle";
   runError = null;
+  runMeta = null;
+  partialPortrait = null;
+  runStage = null;
   activeTab = "stage1";
   renderSidebar();
   emptyStateEl.hidden = true;
@@ -209,8 +295,11 @@ async function selectDeal(dealId) {
   // this is what makes navigating away and back not "lose" a run.
   const latest = await fetch(`/api/deals/${dealId}/latest-run`).then((r) => r.json());
   if (latest) {
+    runMeta = { triggeredBy: latest.triggeredBy, startedAt: latest.startedAt, completedAt: latest.completedAt };
     if (latest.status === "running") {
       runStatus = "running";
+      runStage = latest.stage;
+      partialPortrait = latest.portrait;
       startPolling(latest.runId);
     } else if (latest.status === "completed") {
       runStatus = "completed";
@@ -230,6 +319,8 @@ async function runPipeline(dealId, { waiveFeedback = false } = {}) {
   runStatus = "running";
   runError = null;
   runResult = null;
+  partialPortrait = null;
+  runStage = "evidence_gathering";
   renderDealView();
 
   try {
@@ -253,11 +344,22 @@ function startPolling(runId) {
   pollHandle = setInterval(async () => {
     try {
       const run = await fetch(`/api/runs/${runId}`).then((r) => r.json());
-      if (run.status === "running") return; // keep polling, nothing to update yet
+      if (run.status === "running") {
+        // Surface Stage 1's portrait (and the evidence_gathering -> synthesizing transition)
+        // as soon as it shows up, without waiting for the whole pipeline to finish.
+        const changed = run.stage !== runStage || (run.portrait && !partialPortrait);
+        runStage = run.stage ?? runStage;
+        if (run.portrait) partialPortrait = run.portrait;
+        if (changed) renderDealView();
+        return;
+      }
       stopPolling();
       runStatus = run.status;
+      runMeta = { triggeredBy: run.triggeredBy, startedAt: run.startedAt, completedAt: run.completedAt };
       if (run.status === "completed") runResult = run.result;
       if (run.status === "error") runError = run.error;
+      partialPortrait = null;
+      runStage = null;
       renderDealView();
       renderSidebar(); // clear the sidebar's running indicator for this deal
     } catch {
@@ -293,8 +395,14 @@ function renderDealView() {
   const bannerHtml =
     runStatus === "running"
       ? `<div class="running-banner">
-          <div class="running-banner-top"><span class="spinner"></span>Running post-mortem…</div>
-          <div class="running-banner-sub">Real Claude + Sillage + FullEnrich calls in progress, ~30-90s. Safe to navigate away — this keeps running server-side.</div>
+          <div class="running-banner-top"><span class="spinner"></span>${
+            runStage === "synthesizing" ? "Stage 2/3 — scoring &amp; synthesizing…" : "Stage 1 — gathering evidence…"
+          }</div>
+          <div class="running-banner-sub">${
+            runStage === "synthesizing"
+              ? "Evidence portrait is ready (see the tab below) — now ranking causes and writing the synthesis, ~10-20s."
+              : "Real Sillage + FullEnrich tool calls in progress, ~20-70s. Safe to navigate away — this keeps running server-side."
+          }</div>
           <div class="running-banner-progress"></div>
         </div>`
       : runStatus === "error"
@@ -323,6 +431,11 @@ function renderDealView() {
         <span>Closed ${escapeHtml(currentDeal.deal.closeDate)}</span>
         <span class="sep">·</span>
         <span>${daysInPipeline} days in pipeline</span>
+        ${
+          runMeta?.startedAt
+            ? `<span class="sep">·</span><span>Post-mortem: ${escapeHtml(triggerLabel(runMeta.triggeredBy))}, ${escapeHtml(relativeTime(runMeta.completedAt ?? runMeta.startedAt))}</span>`
+            : ""
+        }
       </div>
       <div class="deal-header-meta">
         <span class="deal-amount-hero">${fmtMoney(currentDeal.deal.amount)}</span>
@@ -334,7 +447,7 @@ function renderDealView() {
       ${runControlsHtml}
       ${bannerHtml}
     </div>
-    ${runResult ? renderTabs() : ""}
+    ${runResult || partialPortrait ? renderTabs() : ""}
   `;
 
   if (!isWon) {
@@ -346,11 +459,17 @@ function renderDealView() {
 // ---- Tabs ----
 
 function renderTabs() {
-  const { portrait, finalPortrait, feedbackApplied } = runResult;
+  const portrait = runResult?.portrait ?? partialPortrait;
+  const finalPortrait = runResult?.finalPortrait ?? null;
+  const feedbackApplied = runResult?.feedbackApplied ?? false;
   const tabs = [
     { id: "stage1", label: "1. Evidence Portrait", count: portrait.gapFindings.length },
-    { id: "stage2", label: "2. Follow-up", count: feedbackApplied ? "✓" : "–" },
-    { id: "stage3", label: "3. Synthesis", count: finalPortrait.gapFindings.filter((f) => f.evidenceTier !== "inferred_hypothesis").length },
+    { id: "stage2", label: "2. Follow-up", count: runResult ? (feedbackApplied ? "✓" : "–") : "…" },
+    {
+      id: "stage3",
+      label: "3. Synthesis",
+      count: finalPortrait ? finalPortrait.gapFindings.filter((f) => f.evidenceTier !== "inferred_hypothesis").length : "…",
+    },
   ];
 
   return `
@@ -377,15 +496,19 @@ function attachTabListeners() {
 }
 
 function renderActiveTab() {
-  if (activeTab === "stage1") return renderStage1();
+  if (activeTab === "stage1") return renderStage1(runResult?.portrait ?? partialPortrait);
+  if (!runResult) {
+    return `<section class="stage tab-panel-header-omitted"><div class="stage-body">
+      <p class="unchanged-note">Evidence gathering is done — scoring and synthesis are running now. This tab will populate automatically.</p>
+    </div></section>`;
+  }
   if (activeTab === "stage2") return renderStage2();
   return renderStage3();
 }
 
 // ---- Stage 1: Evidence Portrait ----
 
-function renderStage1() {
-  const p = runResult.portrait;
+function renderStage1(p) {
   const isAddonFinding = (f) => p.addOnFramework && f.frameworkId === p.addOnFramework.id;
   const coreFindings = p.gapFindings.filter((f) => !isAddonFinding(f));
   const addonFindings = p.gapFindings.filter(isAddonFinding);
@@ -497,40 +620,65 @@ function renderStage2() {
 
   // Findings whose deterministic next-step category is anything other than "no further
   // investigation needed" — these are the outstanding items a rep/manager should assign.
-  const outstanding = finalPortrait.gapFindings.filter((f) => f.recommendedNextStepCategory !== "no_further_investigation_needed");
-  const defaultAssignee = ownerName(currentDeal.deal.owner);
+  // Ranked by the same deterministic score as "Ranked causes," most important first.
+  const outstanding = finalPortrait.gapFindings
+    .filter((f) => f.recommendedNextStepCategory !== "no_further_investigation_needed")
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const stillOpenCount = outstanding.filter((f) => !isWaived(f.id)).length;
 
   const outstandingHtml = outstanding
     .map((f) => {
       const assigned = assignedItems[f.id];
-      if (assigned) {
+
+      // Waived — resolved locally, no real evidence change.
+      if (assigned?.status === "waived") {
+        return `
+    <div class="assign-row waived">
+      <div class="assign-row-top">
+        ${badge(NEXT_STEP_BADGE, "waived")}
+        <span class="finding-dimension">${escapeHtml(f.dimension)}</span>
+        <span class="unchanged-note" style="margin-left:auto;">Waived by ${escapeHtml(assigned.assignee)} — no follow-up needed</span>
+        <button class="webhook-btn" onclick="unassignItem('${f.id}')">Reopen</button>
+      </div>
+    </div>`;
+      }
+
+      // Assigned, not yet resolved — offer either a real feedback submission (re-runs the
+      // pipeline and can genuinely clear this) or a local waive (just closes the tracker item).
+      if (assigned?.status === "assigned") {
         return `
     <div class="assign-row assigned">
       <div class="assign-row-top">
         ${badge(NEXT_STEP_BADGE, f.recommendedNextStepCategory)}
         <span class="finding-dimension">${escapeHtml(f.dimension)}</span>
+        <span class="unchanged-note">confidence ${f.confidence}</span>
         <span class="assign-person" style="margin-left:auto;">
           <span class="avatar avatar-sm">${escapeHtml(initials(assigned.assignee))}</span>${escapeHtml(assigned.assignee)}
         </span>
         <button class="webhook-btn" onclick="unassignItem('${f.id}')">Unassign</button>
       </div>
-      ${assigned.personNote ? `<div class="citation client-feedback"><span class="cite-source">simulated feedback from ${escapeHtml(assigned.assignee)}</span> — ${escapeHtml(assigned.personNote)}</div>` : ""}
-      ${assigned.internalNote ? `<div class="citation"><span class="cite-source">internal note</span> — ${escapeHtml(assigned.internalNote)}</div>` : ""}
+      <div class="assign-form">
+        <textarea id="assignee-note-${f.id}" class="note-textarea" rows="2" placeholder="What ${escapeHtml(assigned.assignee)} found — submitting confirms this at confidence 0.95 and re-runs synthesis"></textarea>
+        <div class="assign-form-actions">
+          <button class="run-btn" onclick="submitAssignFeedback('${f.id}')">Submit feedback &amp; re-run</button>
+          <button class="webhook-btn" onclick="waiveItem('${f.id}')">Waive — no follow-up needed</button>
+        </div>
+      </div>
     </div>`;
       }
+
+      // Unassigned — just pick who owns it.
+      const defaultAssignee = defaultAssigneeFor(f.dimension);
       return `
     <div class="assign-row">
       <div class="assign-row-top">
         ${badge(NEXT_STEP_BADGE, f.recommendedNextStepCategory)}
         <span class="finding-dimension">${escapeHtml(f.dimension)}</span>
+        <span class="unchanged-note">confidence ${f.confidence}</span>
       </div>
-      <div class="assign-form">
-        <div class="assign-person-field">
-          <span class="avatar avatar-sm" id="assignee-avatar-${f.id}">${escapeHtml(initials(defaultAssignee))}</span>
-          <input class="assign-name-input" list="teamRoster" id="assignee-${f.id}" value="${escapeHtml(defaultAssignee)}" oninput="updateAssigneeAvatar('${f.id}')">
-        </div>
-        <textarea id="assignee-note-${f.id}" class="note-textarea" rows="2" placeholder="Note from them (simulates their feedback)"></textarea>
-        <textarea id="internal-note-${f.id}" class="note-textarea" rows="2" placeholder="Additional internal note"></textarea>
+      <div class="assign-person-field">
+        <span class="avatar avatar-sm" id="assignee-avatar-${f.id}">${escapeHtml(initials(defaultAssignee))}</span>
+        <input class="assign-name-input" list="teamRoster" id="assignee-${f.id}" value="${escapeHtml(defaultAssignee)}" oninput="updateAssigneeAvatar('${f.id}')">
         <button class="webhook-btn" onclick="assignItem('${f.id}')">Assign</button>
       </div>
     </div>`;
@@ -539,7 +687,7 @@ function renderStage2() {
 
   const outstandingSectionHtml =
     outstanding.length > 0
-      ? `<h4 style="margin-top:0;">Outstanding follow-up (${outstanding.length})</h4>
+      ? `<h4 style="margin-top:0;">Outstanding follow-up (${stillOpenCount})</h4>
          <datalist id="teamRoster">${TEAM_ROSTER.map((p) => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.role)}</option>`).join("")}</datalist>
          <div class="assign-list">${outstandingHtml}</div>`
       : `<p class="unchanged-note">No outstanding follow-up — every finding has resolved to "no further investigation needed."</p>`;
@@ -617,17 +765,28 @@ function updateAssigneeAvatar(gapFindingId) {
 function assignItem(gapFindingId) {
   const input = document.getElementById(`assignee-${gapFindingId}`);
   if (!input || !input.value.trim()) return;
-  assignedItems[gapFindingId] = {
-    assignee: input.value.trim(),
-    personNote: document.getElementById(`assignee-note-${gapFindingId}`)?.value.trim() ?? "",
-    internalNote: document.getElementById(`internal-note-${gapFindingId}`)?.value.trim() ?? "",
-  };
+  assignedItems[gapFindingId] = { assignee: input.value.trim(), status: "assigned" };
   renderDealView();
 }
 
 function unassignItem(gapFindingId) {
   delete assignedItems[gapFindingId];
   renderDealView();
+}
+
+function waiveItem(gapFindingId) {
+  const current = assignedItems[gapFindingId];
+  if (!current) return;
+  assignedItems[gapFindingId] = { ...current, status: "waived" };
+  renderDealView();
+}
+
+/** Submits the assignee's note as REAL feedback for one finding — genuinely re-runs Stage 2/3. */
+async function submitAssignFeedback(gapFindingId) {
+  const assigned = assignedItems[gapFindingId];
+  const note = document.getElementById(`assignee-note-${gapFindingId}`)?.value.trim();
+  if (!assigned || !note) return;
+  await postFeedback({ [gapFindingId]: { clientConfirms: true, clientDisputes: false, note } }, `assigned follow-up (${assigned.assignee})`);
 }
 
 function toggleManualNoteField() {
@@ -665,14 +824,20 @@ async function submitManualFeedback() {
     manualEntries.map((e) => [e.gapFindingId, { clientConfirms: e.clientConfirms, clientDisputes: e.clientDisputes, note: e.note }])
   );
   manualEntries = [];
+  await postFeedback(findings, "manual entry (UI)");
+}
+
+/** Shared POST to the real feedback endpoint — re-runs Stage 2 + Stage 3 against the given findings. */
+async function postFeedback(findings, collectedVia) {
   runStatus = "running";
+  runStage = "synthesizing"; // this path always skips straight to Stage 2/3, reusing the existing portrait
   renderDealView();
 
   try {
     const res = await fetch(`/api/deals/${currentDeal.dealId}/feedback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ findings, collectedVia: "manual entry (UI)" }),
+      body: JSON.stringify({ findings, collectedVia }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Unknown error");
@@ -760,15 +925,24 @@ function renderStage3() {
     .filter(([category]) => category !== "no_further_investigation_needed")
     .reduce((sum, [, items]) => sum + items.length, 0);
 
+  const findingById = new Map(portrait.gapFindings.map((f) => [f.id, f]));
   const rollupHtml = Object.entries(pm.nextStepsRollup ?? {})
     .map(([category, items]) => {
       if (items.length === 0) return "";
       const clickable = category !== "no_further_investigation_needed";
+      // Ranked by the same deterministic score as "Ranked causes" — most important item first.
+      const ranked = [...items].sort((a, b) => (findingById.get(b.gapFindingId)?.score ?? 0) - (findingById.get(a.gapFindingId)?.score ?? 0));
+      const itemsLabel = ranked
+        .map((i) => {
+          const f = findingById.get(i.gapFindingId);
+          return `${escapeHtml(i.dimension)}${f ? ` (${f.confidence})` : ""}`;
+        })
+        .join(", ");
       return `
       <div class="next-step-bucket ${clickable ? "clickable" : ""}" ${clickable ? `onclick="switchTab('stage2')"` : ""}>
         ${badge(NEXT_STEP_BADGE, category)}
         <div class="next-step-bucket-count">${items.length}</div>
-        <div class="next-step-bucket-items">${items.map((i) => escapeHtml(i.dimension)).join(", ")}</div>
+        <div class="next-step-bucket-items">${itemsLabel}</div>
       </div>`;
     })
     .join("");
@@ -778,7 +952,7 @@ function renderStage3() {
       (d) => `
     <div class="dept-card">
       <div class="dept-card-name">${escapeHtml(d.department)}</div>
-      <p class="dept-card-insight">${escapeHtml(d.insight)}</p>
+      ${renderTruncated(d.insight, { limit: 180, cssClass: "dept-card-insight" })}
     </div>`
     )
     .join("");
@@ -787,7 +961,7 @@ function renderStage3() {
   <section class="stage tab-panel-header-omitted">
     <div class="stage-body">
       <h4>Summary</h4>
-      <p class="summary-text">${escapeHtml(pm.summary)}</p>
+      ${renderTruncated(pm.summary, { limit: 260, cssClass: "summary-text" })}
 
       <div class="section-heading-row">
         <h4 style="margin:0;">Follow-up tracker</h4>

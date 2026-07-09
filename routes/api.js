@@ -21,7 +21,16 @@ router.get("/deals", (req, res) => {
       closedWonReason: d.deal.closedWonReason ?? null,
       accountTier: d.company.hubspot?.accountTier ?? null,
       hasFeedback: Boolean(getFeedback(d.dealId)),
-      activeRun: latestRun ? { runId: latestRun.runId, status: latestRun.status, triggeredBy: latestRun.triggeredBy } : null,
+      activeRun: latestRun
+        ? {
+            runId: latestRun.runId,
+            status: latestRun.status,
+            stage: latestRun.stage,
+            triggeredBy: latestRun.triggeredBy,
+            startedAt: latestRun.startedAt,
+            completedAt: latestRun.completedAt ?? null,
+          }
+        : null,
     };
   });
   res.json(deals);

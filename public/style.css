@@ -2,10 +2,10 @@
   --page-plane: #f9f9f7;
   --surface-1: #fcfcfb;
   --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #898781;
-  --hairline: #e1e0d9;
-  --border-ring: rgba(11, 11, 11, 0.10);
+  --text-secondary: #3d3c38;
+  --text-muted: #6c6a63;
+  --hairline: #d9d7cd;
+  --border-ring: rgba(11, 11, 11, 0.14);
   --accent: #2a78d6;
 
   --status-good: #0ca30c;
@@ -26,8 +26,8 @@
   --strategic-accent: #0d7a6c;
   --strategic-accent-bg: #e3f4f0;
 
-  --card-outline: #e7e6df;
-  --card-outline-hover: #d3d2ca;
+  --card-outline: #d8d6cc;
+  --card-outline-hover: #c7c5ba;
   --dot-texture: #e7e6dd;
 }
 
@@ -68,11 +68,38 @@ body {
   border-bottom: 1px solid var(--hairline);
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--accent), var(--addon-accent));
+  color: #fff;
+  font-family: ui-rounded, "SF Pro Rounded", -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .sidebar-header h1 {
-  font-size: 16px;
-  font-weight: 600;
+  font-family: ui-rounded, "SF Pro Rounded", -apple-system, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.brand-accent {
+  color: var(--accent);
 }
 
 .sidebar-sub {
@@ -132,6 +159,12 @@ body {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.deal-card-trigger {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
 }
 
 .deal-card-amount {
@@ -965,8 +998,10 @@ table.data-table tr:last-child td { border-bottom: none; }
 /* --- Summary prose --- */
 
 .summary-text {
-  font-size: 14px;
+  font-size: 14.5px;
+  font-weight: 500;
   line-height: 1.6;
+  color: var(--text-primary);
 }
 
 /* --- Collapsible tool log --- */
@@ -1155,6 +1190,20 @@ details.tool-log summary {
 
 .assign-name-input {
   flex: 1;
+}
+
+.assign-form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.assign-row.waived {
+  opacity: 0.75;
+}
+
+.assign-row.waived .assign-row-top {
+  margin-bottom: 0;
 }
 
 /* --- Clickable next-step bucket (links back to Follow-up tab) --- */
