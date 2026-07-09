@@ -1,11 +1,13 @@
 import { classifyNextStep } from "./next-step-classifier.js";
-import { scoreAllFindings } from "./scoring.js";
+import { scoreAllFindings } from "./rubric-scoring.js";
 
 /**
- * Pure, schema-preserving transform. Never changes the shape Stage 3 consumes —
- * only mutates gapFindings[] entries in place. Findings not referenced in
- * feedbackInput are left untouched: "never actioned until confirmed" stays
- * enforced structurally, not just by convention.
+ * Stage 2 — Follow-up / Feedback (optional, waivable). Unlike Stage 1 and
+ * Stage 3, this is not an LLM call — it's a pure, schema-preserving transform.
+ * Never changes the shape Stage 3 consumes — only mutates gapFindings[]
+ * entries in place. Findings not referenced in feedbackInput are left
+ * untouched: "never actioned until confirmed" stays enforced structurally,
+ * not just by convention.
  */
 export function reconcileFeedback(portrait, feedbackInput, framework, deal) {
   if (!feedbackInput) return portrait;

@@ -1,0 +1,36 @@
+{
+  "id": "pharma_compliance_addon",
+  "label": "Pharma/Life Sciences Compliance Add-on",
+  "description": "Extra regulatory/compliance gap-scan layered on top of the qualification framework (MEDDPICC) for deals in regulated life-sciences/pharma accounts. Not part of MEDDPICC — a separate, complementary framework that only applies when the deal's industry warrants it.",
+  "appliesWhenDealIndustryIn": ["life_sciences_pharma"],
+  "dimensions": [
+    {
+      "key": "cfr11Compliance",
+      "label": "21 CFR Part 11 / Electronic Records Compliance",
+      "description": "Whether the deal's evidence confirms the software's electronic-records/e-signature compliance (21 CFR Part 11) was actually validated with the account, not just claimed in a decision-criteria line.",
+      "requiredEvidenceFields": ["meddpiccNotes.decisionCriteria"],
+      "causalWeightHint": 0.8
+    },
+    {
+      "key": "dataResidency",
+      "label": "Data Residency / Regional Hosting (e.g. HDS/GDPR)",
+      "description": "Whether data-residency or health-data-hosting requirements (e.g. EU hosting, HDS certification) were captured and confirmed, given the account's region.",
+      "requiredEvidenceFields": [],
+      "causalWeightHint": 0.6
+    },
+    {
+      "key": "validationDocumentation",
+      "label": "Validation & Qualification Docs (IQ/OQ/PQ)",
+      "description": "Whether the account's validation/qualification documentation requirements for GxP systems were addressed before the deal stalled.",
+      "requiredEvidenceFields": [],
+      "causalWeightHint": 0.55
+    },
+    {
+      "key": "securityReviewSignoff",
+      "label": "IT/Security Review Formal Sign-off",
+      "description": "Whether a security or IT review that occurred actually resulted in a formal, documented sign-off — vs. an informal 'no concerns' that never became a closed approval.",
+      "requiredEvidenceFields": ["meddpiccNotes.paperProcess"],
+      "causalWeightHint": 0.5
+    }
+  ]
+}

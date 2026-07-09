@@ -2,7 +2,8 @@
   "dealId": "deal-003",
   "meta": {
     "tier": "inferred_hypothesis_demo",
-    "dealName": "Medidata Solutions — Clinical Trial Data Integration Platform"
+    "dealName": "Medidata Solutions — Clinical Trial Data Integration Platform",
+    "industry": "life_sciences_pharma"
   },
   "deal": {
     "amount": 90000,

@@ -23,12 +23,47 @@ Not every dimension needs a finding — only create a gapFindings entry for a di
 Every finding must cite the specific evidence it's based on (note field, email, activity entry, proposal, or a tool result) — never assert a conclusion without a citation. Assign a confidence score (0-1) reflecting how certain you are, independent of evidence tier.`;
 }
 
-export function validateGapFindings(findings, framework) {
-  const validKeys = new Set(framework.dimensions.map((d) => d.key));
+/**
+ * A second, independent gap scan layered on top of the primary framework —
+ * only run when the deal's industry warrants it (see `appliesToIndustry`
+ * below). Produces findings using the exact same evidence-tier rules and
+ * finding-id convention as the primary scan, just against a different
+ * dimension list — this is what makes "framework is swappable/composable,
+ * not hardcoded" a demonstrated fact rather than just an architecture claim.
+ */
+export function buildAddOnInstructions(addOnFramework) {
+  const dimensionLines = addOnFramework.dimensions
+    .map((d) => `- **${d.key}** (${d.label}): ${d.description}`)
+    .join("\n");
+
+  return `This deal is also in scope for a SEPARATE, complementary compliance add-on scan — "${addOnFramework.label}". This is not part of the qualification framework above; run it as an additional, independent pass:
+
+${dimensionLines}
+
+Use the exact same evidence-tier rules (documented_gap / evidence_conflict / inferred_hypothesis), the same finding-id convention ("<dealId>-<dimension>"), and the same citation requirement as the qualification scan above. These add-on findings will be visually separated from the qualification findings downstream — you don't need to do anything special to mark them, just use the dimension keys listed here (they don't overlap with the qualification framework's keys).`;
+}
+
+export function appliesToIndustry(addOnFramework, dealIndustry) {
+  if (!dealIndustry) return false;
+  return (addOnFramework.appliesWhenDealIndustryIn ?? []).includes(dealIndustry);
+}
+
+export function validateGapFindings(findings, frameworks) {
+  const frameworkList = Array.isArray(frameworks) ? frameworks : [frameworks];
+  const validKeys = new Set(frameworkList.flatMap((fw) => fw.dimensions.map((d) => d.key)));
   const invalid = findings.filter((f) => !validKeys.has(f.dimension));
   if (invalid.length > 0) {
     throw new Error(
-      `Gap findings reference unknown dimensions for framework "${framework.id}": ${invalid.map((f) => f.dimension).join(", ")}`
+      `Gap findings reference dimensions not in any active framework (${frameworkList.map((f) => f.id).join(", ")}): ${invalid.map((f) => f.dimension).join(", ")}`
     );
   }
+}
+
+/** Tags each finding with the id of whichever active framework actually owns its dimension. */
+export function tagFindingsWithFramework(findings, frameworks) {
+  const frameworkList = Array.isArray(frameworks) ? frameworks : [frameworks];
+  return findings.map((f) => {
+    const owner = frameworkList.find((fw) => fw.dimensions.some((d) => d.key === f.dimension));
+    return { ...f, frameworkId: owner?.id ?? frameworkList[0].id };
+  });
 }

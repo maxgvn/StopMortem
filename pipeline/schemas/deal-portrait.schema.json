@@ -10,6 +10,11 @@
       "required": ["id", "version"],
       "properties": { "id": { "type": "string" }, "version": { "type": "string" } }
     },
+    "addOnFramework": {
+      "type": ["object", "null"],
+      "description": "Set only when an industry-conditional add-on framework (e.g. pharma-compliance-addon) was active for this deal. Null for deals outside that industry.",
+      "properties": { "id": { "type": "string" }, "label": { "type": "string" } }
+    },
     "generatedAt": { "type": "string" },
     "claimUnderReview": {
       "type": "object",
@@ -58,6 +63,7 @@
         "properties": {
           "id": { "type": "string" },
           "dimension": { "type": "string" },
+          "frameworkId": { "type": "string", "description": "Which active framework this finding's dimension belongs to (primary qualification framework or an add-on)." },
           "evidenceTier": { "type": "string", "enum": ["documented_gap", "evidence_conflict", "inferred_hypothesis"] },
           "statement": { "type": "string" },
           "evidenceCitations": {

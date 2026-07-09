@@ -37,6 +37,40 @@
       "type": "array",
       "description": "Grey-tier findings not converted into actions — diagnosed only, per the guardrail that speculation is never actioned.",
       "items": { "type": "object" }
+    },
+    "departmentInsights": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": { "department": { "type": "string", "enum": ["Sales", "Pre-Sales", "Product"] }, "insight": { "type": "string" } }
+      }
+    },
+    "recoveryNote": {
+      "type": ["string", "null"],
+      "description": "Optional one-sentence aside on whether the account might be re-engageable. Not a rescue plan — deliberately out of scope beyond this single note."
+    },
+    "nextStepsRollup": {
+      "type": "object",
+      "description": "Deterministic (code-computed) grouping of every finding by recommendedNextStepCategory — the rolled-up 'what happens next', not just a per-finding badge.",
+      "properties": {
+        "full_third_party_review": { "type": "array" },
+        "client_call_needed": { "type": "array" },
+        "some_internal_followup_needed": { "type": "array" },
+        "no_further_investigation_needed": { "type": "array" }
+      }
+    },
+    "publishTargets": {
+      "type": "array",
+      "description": "Deterministic (code-generated) list of where this post-mortem was or would be distributed. Only 'Local file' is real; everything else is explicitly marked simulated.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": { "type": "string" },
+          "status": { "type": "string", "enum": ["done", "simulated"] },
+          "simulated": { "type": "boolean" },
+          "detail": { "type": "string" }
+        }
+      }
     }
   }
 }

@@ -17,6 +17,10 @@
   --status-serious-bg: #fdeee7;
   --status-critical-bg: #fbe9e9;
   --status-muted-bg: #f0efec;
+
+  /* categorical slot (violet) — an identity marker for the pharma add-on section, not a state */
+  --addon-accent: #4a3aa7;
+  --addon-accent-bg: #efecfa;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -39,6 +43,9 @@
     --status-serious-bg: #2b1a13;
     --status-critical-bg: #2b1414;
     --status-muted-bg: #232320;
+
+    --addon-accent: #9085e9;
+    --addon-accent-bg: #201d33;
   }
 }
 
@@ -132,6 +139,56 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.running-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.deal-card-running-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* --- Status strip (sidebar footer) --- */
+
+.status-strip {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.connected { background: var(--status-good); }
+.status-dot.error { background: var(--status-critical); }
+.status-dot.not_integrated { background: var(--text-muted); }
+.status-dot.unknown { background: var(--text-muted); }
+
 /* --- Main --- */
 
 .main {
@@ -222,7 +279,80 @@ button.run-btn:disabled {
   font-style: normal;
 }
 
-/* --- Stage sections --- */
+.webhook-btn {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+/* --- Persistent running banner — always visible while a run is active, survives navigation --- */
+
+.running-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--status-muted-bg);
+  border: 1px solid var(--hairline);
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.running-banner .spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Tabs --- */
+
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab-btn:hover { color: var(--text-primary); }
+
+.tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.tab-btn .tab-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* --- Stage sections (now tab panels — one visible at a time) --- */
 
 .stage {
   border: 1px solid var(--hairline);
@@ -230,6 +360,115 @@ button.run-btn:disabled {
   background: var(--surface-1);
   margin-bottom: 20px;
   overflow: hidden;
+}
+
+.stage.tab-panel-header-omitted .stage-header { display: none; }
+
+/* --- Capped list + fold-out for "the rest" --- */
+
+.list-cap-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0 10px;
+}
+
+details.fold-more summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 6px 0;
+  list-style: none;
+}
+
+details.fold-more summary::-webkit-details-marker { display: none; }
+
+details.fold-more summary::before {
+  content: "▸ ";
+}
+
+details.fold-more[open] summary::before {
+  content: "▾ ";
+}
+
+/* --- Next-steps rollup --- */
+
+.next-steps-rollup {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.next-step-bucket {
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.next-step-bucket-count {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.next-step-bucket-items {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* --- Department insights --- */
+
+.dept-insight {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 13px;
+}
+
+.dept-insight:last-child { border-bottom: none; }
+
+.dept-name {
+  flex-shrink: 0;
+  min-width: 80px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* --- Recovery note --- */
+
+.recovery-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px dashed var(--hairline);
+  padding-top: 10px;
+  margin-top: 16px;
+}
+
+/* --- Pharma compliance add-on (categorical identity, not a status) --- */
+
+.addon-section {
+  border: 1px solid var(--addon-accent);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-top: 16px;
+  background: var(--addon-accent-bg);
+}
+
+.addon-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--addon-accent);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.addon-section .finding {
+  background: var(--surface-1);
 }
 
 .stage-header {
